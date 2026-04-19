@@ -1,0 +1,31 @@
+# Knowledge Base — Python dependencies
+# Install with: pip install -r requirements.txt
+
+# PDF text extraction
+pdfplumber==0.11.0
+PyMuPDF==1.24.5          # better for multi-column govt PDFs (optional but recommended)
+
+# Web scraping
+playwright==1.44.0        # headless browser — run: playwright install chromium
+beautifulsoup4==4.12.3
+markdownify==0.12.1
+requests==2.32.3
+lxml==5.2.2
+
+# Chunking & tokenisation
+tiktoken==0.7.0
+
+# Embeddings (free local model — no API key needed)
+sentence-transformers==3.0.1
+
+# Embeddings (OpenAI — optional, better quality, costs ~$0.002)
+openai==1.35.3
+
+# Vector store
+faiss-cpu==1.8.0
+
+# Excel reading (for itr_form_schema_loader.py)
+openpyxl==3.1.4
+
+# OCR (optional — for scanned PDFs)
+# pip install ocrmypdf  — then: ocrmypdf scanned.pdf searchable.pdf
