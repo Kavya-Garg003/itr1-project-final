@@ -79,7 +79,7 @@ function FieldRow({
       <div className="flex items-center gap-3 shrink-0">
         {/* Confidence bar */}
         {conf && (
-          <div className="w-20 flex items-center gap-1.5">
+          <div className="w-20 flex items-center gap-1.5 hide-on-print">
             <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <div className={`h-full ${barColor} rounded-full`} style={{ width: `${pct}%` }} />
             </div>
@@ -102,7 +102,7 @@ function FieldRow({
         {/* Edit button */}
         <button
           onClick={() => onEdit(fieldPath, label, value)}
-          className="text-gray-300 hover:text-blue-500 text-sm"
+          className="text-gray-300 hover:text-blue-500 text-sm hide-on-print"
           title="Edit"
         >
           ✎
@@ -264,13 +264,22 @@ function FormPageInner() {
             <h1 className="text-2xl font-semibold text-gray-900">Your ITR-1 (Sahaj)</h1>
             <div className="text-sm text-gray-400 mt-0.5">AY 2024-25 · Auto-filled by AI</div>
           </div>
-          <a
-            href={`${API}/api/pipeline/export/${sessionId}`}
-            target="_blank"
-            className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Export JSON
-          </a>
+          <div className="flex gap-2 hide-on-print">
+            <button
+              onClick={() => window.print()}
+              className="text-sm bg-indigo-600 font-medium text-white px-4 py-2 rounded-xl hover:bg-indigo-700 shadow-sm transition"
+            >
+              <span>🖨️</span> PDF Report
+            </button>
+            <a
+              href={`${API}/api/pipeline/export/${sessionId}`}
+              target="_blank"
+              className="text-sm bg-white border border-gray-200 font-medium text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-50 transition"
+              title="Download raw ITD Portal compatible JSON."
+            >
+              ITD JSON
+            </a>
+          </div>
         </div>
 
         {/* Validation flags */}
@@ -391,12 +400,12 @@ function FormPageInner() {
         </div>
 
         {/* Chat button */}
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center hide-on-print pb-8">
           <a
             href={`/chat?session=${sessionId}`}
-            className="text-sm text-blue-600 hover:underline"
+            className="inline-flex items-center gap-2 text-sm bg-white border shadow-sm border-indigo-200 text-indigo-700 font-medium px-6 py-3 rounded-xl hover:bg-indigo-50 transition group"
           >
-            Ask a question about your return →
+             Chat with AI about this specific return <span className="group-hover:translate-x-1 transition-transform">→</span>
           </a>
         </div>
       </div>

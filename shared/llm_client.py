@@ -199,11 +199,11 @@ def complete_vision(
 
     vision_providers = [
         {
-            "name":     "openrouter-llama-vision",
-            "label":    "OpenRouter Llama-3.2 90B Vision (free)",
+            "name":     "openrouter-gemma-3-27b",
+            "label":    "OpenRouter Gemma-3 27B Vision (free)",
             "base_url": "https://openrouter.ai/api/v1",
             "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
-            "model":    "meta-llama/llama-3.2-90b-vision-instruct:free",
+            "model":    "google/gemma-3-27b-it:free",
             "max_tokens": 2048,
             "extra_headers": {
                 "HTTP-Referer": "https://itr1-rag-agent.local",
@@ -211,19 +211,19 @@ def complete_vision(
             },
         },
         {
-            "name":     "groq-11b-vision",
-            "label":    "Groq Llama-3.2 11B Vision",
-            "base_url": "https://api.groq.com/openai/v1",
-            "api_key":  lambda: os.getenv("GROQ_API_KEY", ""),
-            "model":    "llama-3.2-11b-vision-preview",
+            "name":     "openrouter-gemma-3-12b",
+            "label":    "OpenRouter Gemma-3 12B Vision (free)",
+            "base_url": "https://openrouter.ai/api/v1",
+            "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
+            "model":    "google/gemma-3-12b-it:free",
             "max_tokens": 2048,
         },
         {
-            "name":     "groq-90b-vision",
-            "label":    "Groq Llama-3.2 90B Vision",
-            "base_url": "https://api.groq.com/openai/v1",
-            "api_key":  lambda: os.getenv("GROQ_API_KEY", ""),
-            "model":    "llama-3.2-90b-vision-preview",
+            "name":     "openrouter-nemotron-vl",
+            "label":    "OpenRouter Nemotron Vision (free)",
+            "base_url": "https://openrouter.ai/api/v1",
+            "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
+            "model":    "nvidia/nemotron-nano-12b-v2-vl:free",
             "max_tokens": 2048,
         }
     ]
