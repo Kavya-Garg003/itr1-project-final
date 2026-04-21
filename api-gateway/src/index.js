@@ -179,8 +179,26 @@ app.post("/api/pipeline/update-field", authMiddleware, async (req, res) => {
 
 app.get("/api/pipeline/export/:sessionId", authMiddleware, async (req, res) => {
   try {
-    const data = await forwardGet(SERVICES.agentOrch, `/pipeline/export/${req.params.sessionId}`);
-    res.json(data);
+    const format = req.query.format || "json";
+    const resp = await fetch(`${SERVICES.agentOrch}/pipeline/export/${req.params.sessionId}?format=${format}`);
+    
+    if (!resp.ok) {
+      const err = await resp.text();
+      return res.status(resp.status).json({ error: err });
+    }
+
+    if (format === "excel") {
+      res.setHeader("Content-Disposition", resp.headers.get("content-disposition") || `attachment; filename=ITR1_filled.xlsm`);
+      res.setHeader("Content-Type", resp.headers.get("content-type") || "application/vnd.ms-excel.sheet.macroEnabled.12");
+      return resp.body.pipe(res);
+    } else if (format === "pdf") {
+      res.setHeader("Content-Disposition", resp.headers.get("content-disposition") || `attachment; filename=ITR1_filled.pdf`);
+      res.setHeader("Content-Type", resp.headers.get("content-type") || "application/pdf");
+      return resp.body.pipe(res);
+    } else {
+      const data = await resp.json();
+      return res.json(data);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

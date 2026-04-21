@@ -88,10 +88,19 @@ def _mmr(query, index, meta, embed_fn, top_k=5, fetch_k=15, lam=0.6):
     for _ in range(min(top_k, len(candidates))):
         if not remaining: break
         if not selected:
-            best = max(remaining, key=lambda i: q_sims[i])
+            def _init_score(i):
+                is_pdf = "pdf" in candidates[i].get("source", "").lower() or "pdf" in candidates[i].get("doc_type", "").lower()
+                return q_sims[i] + (0.08 if is_pdf else 0)
+            best = max(remaining, key=_init_score)
         else:
             sel_e = cand_embs[selected]
-            scores = [(i, lam*q_sims[i] - (1-lam)*float(np.max(cand_embs[i] @ sel_e.T))) for i in remaining]
+            scores = []
+            for i in remaining:
+                c_meta = candidates[i]
+                is_pdf = "pdf" in c_meta.get("source", "").lower() or "pdf" in c_meta.get("doc_type", "").lower()
+                boost = 0.08 if is_pdf else 0
+                mmr_score = lam*(q_sims[i] + boost) - (1-lam)*float(np.max(cand_embs[i] @ sel_e.T))
+                scores.append((i, mmr_score))
             best = max(scores, key=lambda x: x[1])[0]
         selected.append(best); remaining.remove(best)
     return [candidates[i] for i in selected]
@@ -102,7 +111,9 @@ def _rerank(query, chunks):
         from sentence_transformers import CrossEncoder
         ce = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
         scores = ce.predict([[query, c["text"]] for c in chunks])
-        for c, s in zip(chunks, scores): c["_score"] = float(s)
+        for c, s in zip(chunks, scores):
+            is_pdf = "pdf" in c.get("source", "").lower() or "pdf" in c.get("doc_type", "").lower()
+            c["_score"] = float(s) + (1.5 if is_pdf else 0)
         chunks.sort(key=lambda x: x.get("_score", 0), reverse=True)
     except Exception:
         pass
@@ -110,15 +121,16 @@ def _rerank(query, chunks):
 
 
 def _answer(query, chunks, ay):
-    ctx = "\n\n---\n\n".join(f"[{c.get('source','')} | {c.get('section','')}]\n{c['text']}" for c in chunks)
+    ctx = "\n\n---\n\n".join(f"[Source: {c.get('source','')} | Section: {c.get('section','')}]\n{c['text']}" for c in chunks)
     system = (
         f"You are an expert ITR-1 tax assistant for {ay}. "
+        "Your knowledge base contains BOTH offline official CBDT PDF documents and online scraped data. "
         "Answer using ONLY the provided context. Do NOT hallucinate or guess. "
-        "You MUST structure your response strictly in the following format:\n"
+        "You MUST structure your response strictly in the following format:\n\n"
         "**Answer**: <your direct final answer>\n"
         "**Reasoning**: <why you concluded this based on the tax law context>\n"
         "**Source Quote**: <the exact snippet from the text you used>\n"
-        "**Citation**: <source file/URL and section>"
+        "**Citation**: <the EXACT 'Source' and 'Section' from the context brackets>"
     )
     prompt = f"Context:\n{ctx}\n\nQuestion: {query}\n\nResponse:"
     try:

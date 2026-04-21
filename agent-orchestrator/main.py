@@ -14,6 +14,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -200,16 +201,50 @@ async def chat_query(req: ChatRequest):
 
 # ── Export filled form as JSON ─────────────────────────────────────────────────
 
+# ── Export filled form ────────────────────────────────────────────────────────
+
 @app.get("/pipeline/export/{session_id}")
 def export_form(session_id: str, format: str = "json"):
-    """Export the filled ITR-1 form. Formats: json (more to come)."""
+    """Export the filled ITR-1 form. Formats: json, excel"""
     if session_id not in _session_store:
         raise HTTPException(404, "Session not found")
 
     result = _session_store[session_id]
-    return {
-        "session_id": session_id,
-        "ay":         result["itr1_form"].get("ay", "AY2024-25"),
-        "itr1_form":  result["itr1_form"],
-        "exported_at": __import__("datetime").datetime.utcnow().isoformat(),
-    }
+    
+    if format == "json":
+        return {
+            "session_id": session_id,
+            "ay":         result["itr1_form"].get("ay", "AY2024-25"),
+            "itr1_form":  result["itr1_form"],
+            "exported_at": __import__("datetime").datetime.utcnow().isoformat(),
+        }
+        
+    elif format == "excel":
+        from itr1_excel_filler import fill_itr1_excel
+        try:
+            excel_path = fill_itr1_excel(result, session_id)
+            return FileResponse(
+                path=excel_path,
+                filename=excel_path.name,
+                media_type="application/vnd.ms-excel.sheet.macroEnabled.12"
+            )
+        except Exception as e:
+            import traceback
+            raise HTTPException(500, f"Excel generation failed: {e}\n{traceback.format_exc()}")
+            
+    elif format == "pdf":
+        from itr1_excel_filler import fill_itr1_excel, export_to_pdf_win32
+        try:
+            excel_path = fill_itr1_excel(result, session_id)
+            pdf_path = export_to_pdf_win32(excel_path)
+            return FileResponse(
+                path=pdf_path,
+                filename=pdf_path.name,
+                media_type="application/pdf"
+            )
+        except Exception as e:
+            import traceback
+            raise HTTPException(500, f"PDF generation failed: {e}\n{traceback.format_exc()}")
+
+    else:
+        raise HTTPException(400, "Unsupported format. Use 'json', 'excel', or 'pdf'.")
