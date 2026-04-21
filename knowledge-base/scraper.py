@@ -262,8 +262,14 @@ def extract_content_bs4(html: str, site_type: str) -> str:
         tag.decompose()
 
     for el in soup.find_all(True):
-        cls = " ".join(el.get("class", []))
-        el_id = el.get("id", "")
+        if not hasattr(el, "attrs") or el.attrs is None:
+            continue
+        cls = el.get("class", [])
+        if isinstance(cls, list):
+            cls = " ".join(cls)
+        elif not isinstance(cls, str):
+            cls = str(cls)
+        el_id = str(el.get("id", ""))
         if any(j in cls.lower() for j in junk_classes):
             el.decompose()
         elif any(j in el_id.lower() for j in junk_ids):

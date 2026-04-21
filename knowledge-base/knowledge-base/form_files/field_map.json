@@ -1,0 +1,453 @@
+{
+  "PAN": {
+    "official_name": "PAN",
+    "schema_path": "personal_info.pan",
+    "type": "string",
+    "required": true,
+    "validation": {
+      "pattern": "^[A-Z]{5}\\d{4}[A-Z]$",
+      "message": "PAN must be 10 characters: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F)"
+    }
+  },
+  "FirstName": {
+    "official_name": "FirstName",
+    "schema_path": "personal_info.first_name",
+    "type": "string",
+    "required": false
+  },
+  "MiddleName": {
+    "official_name": "MiddleName",
+    "schema_path": "personal_info.middle_name",
+    "type": "string",
+    "required": false
+  },
+  "SurNameOrOrgName": {
+    "official_name": "SurNameOrOrgName",
+    "schema_path": "personal_info.last_name",
+    "type": "string",
+    "required": false
+  },
+  "DOB": {
+    "official_name": "DOB",
+    "schema_path": "personal_info.dob",
+    "type": "string",
+    "required": false
+  },
+  "AadhaarCardNo": {
+    "official_name": "AadhaarCardNo",
+    "schema_path": "personal_info.aadhaar",
+    "type": "string",
+    "required": false,
+    "validation": {
+      "pattern": "^\\d{12}$",
+      "message": "Aadhaar must be exactly 12 digits"
+    }
+  },
+  "MobileNo": {
+    "official_name": "MobileNo",
+    "schema_path": "personal_info.mobile",
+    "type": "string",
+    "required": false
+  },
+  "EmailAddress": {
+    "official_name": "EmailAddress",
+    "schema_path": "personal_info.email",
+    "type": "string",
+    "required": false
+  },
+  "FlatDoorBlockNo": {
+    "official_name": "FlatDoorBlockNo",
+    "schema_path": "personal_info.address_flat",
+    "type": "string",
+    "required": false
+  },
+  "NameBuildingVillage": {
+    "official_name": "NameBuildingVillage",
+    "schema_path": "personal_info.address_street",
+    "type": "string",
+    "required": false
+  },
+  "CityOrTownOrDistrict": {
+    "official_name": "CityOrTownOrDistrict",
+    "schema_path": "personal_info.address_city",
+    "type": "string",
+    "required": false
+  },
+  "StateCd": {
+    "official_name": "StateCd",
+    "schema_path": "personal_info.address_state",
+    "type": "string",
+    "required": false
+  },
+  "PinCode": {
+    "official_name": "PinCode",
+    "schema_path": "personal_info.address_pin",
+    "type": "string",
+    "required": false
+  },
+  "GrossSalary": {
+    "official_name": "GrossSalary",
+    "schema_path": "salary_income.gross_salary",
+    "type": "number",
+    "required": false,
+    "validation": {
+      "min": 0,
+      "max": 50000000,
+      "message": "Gross salary must be between ₹0 and ₹5 crore for ITR-1"
+    }
+  },
+  "Salary17_1": {
+    "official_name": "Salary17_1",
+    "schema_path": "salary_income.salary_as_per_17_1",
+    "type": "number",
+    "required": false
+  },
+  "ValueOfPerquisites17_2": {
+    "official_name": "ValueOfPerquisites17_2",
+    "schema_path": "salary_income.perquisites_17_2",
+    "type": "number",
+    "required": false
+  },
+  "ProfitsInLieuOfSalary17_3": {
+    "official_name": "ProfitsInLieuOfSalary17_3",
+    "schema_path": "salary_income.profits_17_3",
+    "type": "number",
+    "required": false
+  },
+  "ExemptAllowances": {
+    "official_name": "ExemptAllowances",
+    "schema_path": "salary_income.total_exempt_allowances",
+    "type": "number",
+    "required": false
+  },
+  "HRAExemption": {
+    "official_name": "HRAExemption",
+    "schema_path": "salary_income.allowances_exempt_10_13a",
+    "type": "number",
+    "required": false
+  },
+  "LTAExemption": {
+    "official_name": "LTAExemption",
+    "schema_path": "salary_income.allowances_exempt_10_10",
+    "type": "number",
+    "required": false
+  },
+  "NetSalary": {
+    "official_name": "NetSalary",
+    "schema_path": "salary_income.net_salary",
+    "type": "number",
+    "required": false
+  },
+  "DeductionUs16ia": {
+    "official_name": "DeductionUs16ia",
+    "schema_path": "salary_income.standard_deduction_16ia",
+    "type": "number",
+    "required": false,
+    "validation": {
+      "min": 0,
+      "max": 50000,
+      "message": "Standard deduction cannot exceed ₹50,000"
+    }
+  },
+  "EntertainmentAllow16ii": {
+    "official_name": "EntertainmentAllow16ii",
+    "schema_path": "salary_income.entertainment_allowance_16ii",
+    "type": "number",
+    "required": false
+  },
+  "ProfessionalTaxUs16iii": {
+    "official_name": "ProfessionalTaxUs16iii",
+    "schema_path": "salary_income.professional_tax_16iii",
+    "type": "number",
+    "required": false
+  },
+  "IncomeFromSalaries": {
+    "official_name": "IncomeFromSalaries",
+    "schema_path": "salary_income.taxable_salary",
+    "type": "number",
+    "required": false
+  },
+  "AnnualLetableValue": {
+    "official_name": "AnnualLetableValue",
+    "schema_path": "house_property.annual_value",
+    "type": "string",
+    "required": false
+  },
+  "TaxPaidLocalAuthorities": {
+    "official_name": "TaxPaidLocalAuthorities",
+    "schema_path": "house_property.municipal_tax_paid",
+    "type": "number",
+    "required": false
+  },
+  "AnnualValueOfHP": {
+    "official_name": "AnnualValueOfHP",
+    "schema_path": "house_property.net_annual_value",
+    "type": "string",
+    "required": false
+  },
+  "StandardDeduction": {
+    "official_name": "StandardDeduction",
+    "schema_path": "house_property.standard_deduction_30pct",
+    "type": "number",
+    "required": false
+  },
+  "InterestPayable": {
+    "official_name": "InterestPayable",
+    "schema_path": "house_property.interest_on_loan_24b",
+    "type": "string",
+    "required": false,
+    "validation": {
+      "min": -200000,
+      "max": 0,
+      "when": "property_type == self_occupied",
+      "message": "Interest on home loan for self-occupied property is capped at ₹2,00,000 loss"
+    }
+  },
+  "IncomeFromHP": {
+    "official_name": "IncomeFromHP",
+    "schema_path": "house_property.total_income_hp",
+    "type": "number",
+    "required": false
+  },
+  "GrossIncomeOS": {
+    "official_name": "GrossIncomeOS",
+    "schema_path": "other_sources.total_other_sources",
+    "type": "string",
+    "required": false
+  },
+  "IntrstFrmSavingBank": {
+    "official_name": "IntrstFrmSavingBank",
+    "schema_path": "other_sources.savings_bank_interest",
+    "type": "string",
+    "required": false
+  },
+  "IntrstFrmDeposits": {
+    "official_name": "IntrstFrmDeposits",
+    "schema_path": "other_sources.fd_interest",
+    "type": "string",
+    "required": false
+  },
+  "IntrstFrmTaxRefund": {
+    "official_name": "IntrstFrmTaxRefund",
+    "schema_path": "other_sources.other_interest",
+    "type": "string",
+    "required": false
+  },
+  "FamilyPension": {
+    "official_name": "FamilyPension",
+    "schema_path": "other_sources.family_pension",
+    "type": "string",
+    "required": false
+  },
+  "DividendGross": {
+    "official_name": "DividendGross",
+    "schema_path": "other_sources.dividends",
+    "type": "string",
+    "required": false
+  },
+  "GrossTotalIncome": {
+    "official_name": "GrossTotalIncome",
+    "schema_path": "tax_computation.gross_total_income",
+    "type": "number",
+    "required": true,
+    "validation": {
+      "min": 0,
+      "max": 50000000,
+      "message": "Total income above ₹50 lakh — use ITR-2, not ITR-1"
+    }
+  },
+  "Section80C": {
+    "official_name": "Section80C",
+    "schema_path": "deductions.sec_80c",
+    "type": "number",
+    "required": false,
+    "validation": {
+      "min": 0,
+      "max": 150000,
+      "message": "80C deduction cannot exceed ₹1,50,000"
+    }
+  },
+  "Section80CCC": {
+    "official_name": "Section80CCC",
+    "schema_path": "deductions.sec_80ccc",
+    "type": "number",
+    "required": false
+  },
+  "Section80CCD1": {
+    "official_name": "Section80CCD1",
+    "schema_path": "deductions.sec_80ccd_1",
+    "type": "number",
+    "required": false
+  },
+  "Section80CCD1B": {
+    "official_name": "Section80CCD1B",
+    "schema_path": "deductions.sec_80ccd_1b",
+    "type": "number",
+    "required": false,
+    "validation": {
+      "min": 0,
+      "max": 50000,
+      "message": "80CCD(1B) additional NPS deduction cannot exceed ₹50,000"
+    }
+  },
+  "Section80CCD2": {
+    "official_name": "Section80CCD2",
+    "schema_path": "deductions.sec_80ccd_2",
+    "type": "number",
+    "required": false
+  },
+  "Section80D": {
+    "official_name": "Section80D",
+    "schema_path": "deductions.sec_80d",
+    "type": "number",
+    "required": false
+  },
+  "Section80DD": {
+    "official_name": "Section80DD",
+    "schema_path": "deductions.sec_80dd",
+    "type": "number",
+    "required": false
+  },
+  "Section80DDB": {
+    "official_name": "Section80DDB",
+    "schema_path": "deductions.sec_80ddb",
+    "type": "number",
+    "required": false
+  },
+  "Section80E": {
+    "official_name": "Section80E",
+    "schema_path": "deductions.sec_80e",
+    "type": "number",
+    "required": false
+  },
+  "Section80EE": {
+    "official_name": "Section80EE",
+    "schema_path": "deductions.sec_80ee",
+    "type": "number",
+    "required": false
+  },
+  "Section80G": {
+    "official_name": "Section80G",
+    "schema_path": "deductions.sec_80gg",
+    "type": "number",
+    "required": false
+  },
+  "Section80GGC": {
+    "official_name": "Section80GGC",
+    "schema_path": "deductions.sec_80ggc",
+    "type": "number",
+    "required": false
+  },
+  "Section80TTA": {
+    "official_name": "Section80TTA",
+    "schema_path": "deductions.sec_80tta",
+    "type": "number",
+    "required": false,
+    "validation": {
+      "min": 0,
+      "max": 10000,
+      "message": "80TTA deduction cannot exceed ₹10,000"
+    }
+  },
+  "Section80TTB": {
+    "official_name": "Section80TTB",
+    "schema_path": "deductions.sec_80ttb",
+    "type": "number",
+    "required": false,
+    "validation": {
+      "min": 0,
+      "max": 50000,
+      "message": "80TTB deduction cannot exceed ₹50,000 (available only to senior citizens)"
+    }
+  },
+  "Section80U": {
+    "official_name": "Section80U",
+    "schema_path": "deductions.sec_80u",
+    "type": "number",
+    "required": false
+  },
+  "TotalChapVIADeductions": {
+    "official_name": "TotalChapVIADeductions",
+    "schema_path": "deductions.total_deductions",
+    "type": "number",
+    "required": false
+  },
+  "TotalIncome": {
+    "official_name": "TotalIncome",
+    "schema_path": "tax_computation.taxable_income",
+    "type": "number",
+    "required": true
+  },
+  "TaxAtNormalRatesOnAI": {
+    "official_name": "TaxAtNormalRatesOnAI",
+    "schema_path": "tax_computation.tax_before_rebate",
+    "type": "number",
+    "required": false
+  },
+  "RebateUnderSection87A": {
+    "official_name": "RebateUnderSection87A",
+    "schema_path": "tax_computation.rebate_87a",
+    "type": "number",
+    "required": false
+  },
+  "TaxAfterRebate": {
+    "official_name": "TaxAfterRebate",
+    "schema_path": "tax_computation.tax_after_rebate",
+    "type": "number",
+    "required": false
+  },
+  "Surcharge": {
+    "official_name": "Surcharge",
+    "schema_path": "tax_computation.surcharge",
+    "type": "number",
+    "required": false
+  },
+  "HealthAndEduCess": {
+    "official_name": "HealthAndEduCess",
+    "schema_path": "tax_computation.health_education_cess",
+    "type": "number",
+    "required": false
+  },
+  "TotalTaxPayable": {
+    "official_name": "TotalTaxPayable",
+    "schema_path": "tax_computation.total_tax_liability",
+    "type": "number",
+    "required": true
+  },
+  "TaxPayable": {
+    "official_name": "TaxPayable",
+    "schema_path": "tax_computation.tax_payable",
+    "type": "number",
+    "required": false
+  },
+  "Refund": {
+    "official_name": "Refund",
+    "schema_path": "tax_computation.refund",
+    "type": "number",
+    "required": false
+  },
+  "TDS1_TotalTaxDeducted": {
+    "official_name": "TDS1_TotalTaxDeducted",
+    "schema_path": "tds_details.0.tds_deducted",
+    "type": "number",
+    "required": false
+  },
+  "TDS1_TotalTaxClaimed": {
+    "official_name": "TDS1_TotalTaxClaimed",
+    "schema_path": "tds_details.0.tds_claimed",
+    "type": "number",
+    "required": false
+  },
+  "TDS1_EmployerName": {
+    "official_name": "TDS1_EmployerName",
+    "schema_path": "tds_details.0.employer_name",
+    "type": "number",
+    "required": false
+  },
+  "TDS1_TANOfDeductor": {
+    "official_name": "TDS1_TANOfDeductor",
+    "schema_path": "tds_details.0.employer_tan",
+    "type": "number",
+    "required": false
+  }
+}
