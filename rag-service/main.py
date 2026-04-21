@@ -71,7 +71,7 @@ def _load_index(ay=DEFAULT_AY):
     return index, meta
 
 
-def _mmr(query, index, meta, embed_fn, top_k=5, fetch_k=15, lam=0.6):
+def _mmr(query, index, meta, embed_fn, top_k=5, fetch_k=60, lam=0.6):
     q_emb = embed_fn([query])
     distances, ids = index.search(q_emb, fetch_k)
     candidates = []
@@ -115,8 +115,10 @@ def _rerank(query, chunks):
             is_pdf = "pdf" in c.get("source", "").lower() or "pdf" in c.get("doc_type", "").lower()
             c["_score"] = float(s) + (1.5 if is_pdf else 0)
         chunks.sort(key=lambda x: x.get("_score", 0), reverse=True)
-    except Exception:
-        pass
+    except Exception as e:
+        print("Rerank exception:", e)
+        import traceback
+        traceback.print_exc()
     return chunks
 
 
@@ -192,5 +194,13 @@ async def query_chunks_only(req: QueryRequest):
 
 @app.on_event("startup")
 async def startup():
-    try: _load_index(DEFAULT_AY)
-    except Exception as e: print(f"Warning: Could not pre-load {DEFAULT_AY}: {e}")
+    try:
+        print(f"Pre-loading index {DEFAULT_AY}...")
+        _load_index(DEFAULT_AY)
+        print("Pre-loading embedding model...")
+        _get_embedder("huggingface")
+        print("Pre-loading reranker model...")
+        _rerank("warmup", [{"text": "warmup"}])
+        print("All RAG models ready.")
+    except Exception as e:
+        print(f"Warning during startup: {e}")

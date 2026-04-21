@@ -181,7 +181,7 @@ async def chat_query(req: ChatRequest):
         question += form_ctx
 
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
+        async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.post(
                 f"{RAG_URL}/query",
                 json={"question": question, "ay": req.ay, "top_k": 5}

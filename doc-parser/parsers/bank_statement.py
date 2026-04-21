@@ -90,9 +90,28 @@ Convert all numbers to clean floats.
         cleaned = response_text.replace("```json", "").replace("```", "").strip()
         data_dict = json.loads(cleaned)
         
-        # Convert nested transactions
         txs = data_dict.pop("transactions", [])
-        tx_objects = [Transaction(**t) for t in txs if isinstance(t, dict)]
+        
+        # Clean numeric fields that might have come back as strings with commas
+        numeric_fields = ["total_salary_credits", "total_savings_interest", "total_fd_interest", "total_tds_deducted"]
+        for f in numeric_fields:
+            if f in data_dict and isinstance(data_dict[f], str):
+                try:
+                    clean_v = data_dict[f].replace(",", "").replace(" ", "").strip()
+                    data_dict[f] = float(clean_v) if clean_v else 0.0
+                except ValueError:
+                    data_dict[f] = 0.0
+
+        tx_objects = []
+        for t in txs:
+            if isinstance(t, dict):
+                if "amount" in t and isinstance(t["amount"], str):
+                    try:
+                        clean_a = t["amount"].replace(",", "").replace(" ", "").strip()
+                        t["amount"] = float(clean_a) if clean_a else 0.0
+                    except ValueError:
+                        t["amount"] = 0.0
+                tx_objects.append(Transaction(**t))
         
         result = BankStatementData(**{k: v for k, v in data_dict.items() if hasattr(BankStatementData, k)})
         result.transactions = tx_objects

@@ -152,9 +152,9 @@ def node_fill_form(state: AgentState) -> dict:
     for bank in bank_docs:
         d = bank["data"]
         conf = d.get("parse_confidence", 0.6)
-        total_savings_interest += d.get("savings_interest_earned", 0)
-        total_fd_interest      += d.get("fd_interest_earned", 0)
-        total_bank_tds         += d.get("tds_on_interest", 0)
+        total_savings_interest += d.get("total_savings_interest", 0)
+        total_fd_interest      += d.get("total_fd_interest", 0)
+        total_bank_tds         += d.get("total_tds_deducted", 0)
 
     form.other_sources.savings_bank_interest = total_savings_interest
     form.other_sources.fd_interest           = total_fd_interest

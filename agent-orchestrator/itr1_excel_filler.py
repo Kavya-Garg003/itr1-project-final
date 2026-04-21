@@ -157,118 +157,101 @@ def fill_itr1_excel(itr_data: dict, session_id: str) -> Path:
         ...
     }
     """
-    import openpyxl
+    import uuid
+    import win32com.client
+    import pythoncom
 
     if not TEMPLATE_XLSM.exists():
         raise FileNotFoundError(f"Template not found: {TEMPLATE_XLSM}")
 
-    import uuid
     unique_id = uuid.uuid4().hex[:8]
     out_path = OUTPUT_DIR / f"ITR1_filled_{session_id}_{unique_id}.xlsm"
     shutil.copy2(TEMPLATE_XLSM, out_path)
 
-    # Open the copy
-    wb = openpyxl.load_workbook(str(out_path), keep_vba=True)
+    form = itr_data.get("itr1_form", itr_data)
 
-    form = itr_data.get("itr1_form", itr_data)  # support both wrapped and raw
+    pythoncom.CoInitialize()
+    try:
+        excel = win32com.client.Dispatch("Excel.Application")
+        excel.Visible = False
+        excel.DisplayAlerts = False
+        excel.AutomationSecurity = 3
 
-    filled_count = 0
-    skipped = []
+        wb = excel.Workbooks.Open(str(out_path.resolve()))
+        
+        filled_count = 0
+        skipped = []
+        
+        def write_cell(sheet_name, cell_addr, value):
+            try:
+                wb.Sheets(sheet_name).Range(cell_addr).Value = value
+                return True
+            except Exception as e:
+                skipped.append(str(e))
+                return False
 
-    for sheet_name, cell_addr, dot_path in CELL_MAP:
-        if sheet_name not in wb.sheetnames:
-            skipped.append((sheet_name, cell_addr, dot_path, "sheet_missing"))
-            continue
+        for sheet_name, cell_addr, dot_path in CELL_MAP:
+            val = _get_nested(form, dot_path)
+            numeric_keys = {
+                "salary", "income", "tax", "deduction", "tds", "rebate",
+                "cess", "surcharge", "refund", "total", "gross", "net",
+                "allowance", "exempt", "interest", "pension", "dividend",
+            }
+            is_num = any(k in dot_path for k in numeric_keys)
+            formatted = _fmt(val, is_numeric=is_num)
+            
+            if formatted == 0 or formatted == "":
+                continue
 
-        ws = wb[sheet_name]
-        val = _get_nested(form, dot_path)
+            if write_cell(sheet_name, cell_addr, formatted):
+                filled_count += 1
 
-        # Determine if numeric
-        numeric_keys = {
-            "salary", "income", "tax", "deduction", "tds", "rebate",
-            "cess", "surcharge", "refund", "total", "gross", "net",
-            "allowance", "exempt", "interest", "pension", "dividend",
-        }
-        is_num = any(k in dot_path for k in numeric_keys)
+        first = _get_nested(form, "personal_info.first_name") or ""
+        last  = _get_nested(form, "personal_info.last_name")  or ""
+        full_name = f"{first} {last}".strip()
+        if full_name:
+            write_cell("Taxes Paid and Verification", "AO2", full_name)
 
-        formatted = _fmt(val, is_numeric=is_num)
-        if formatted == 0 or formatted == "":
-            continue  # Don't overwrite cells with empty/zero to keep template formulas
+        pan = _get_nested(form, "personal_info.pan") or ""
+        if pan:
+            write_cell("Taxes Paid and Verification", "AO3", pan)
 
-        try:
-            ws[cell_addr] = formatted
-            filled_count += 1
-        except Exception as e:
-            skipped.append((sheet_name, cell_addr, dot_path, str(e)))
-
-    # ── Special: write full name into verification ─────────────────────────────
-    first = _get_nested(form, "personal_info.first_name") or ""
-    last  = _get_nested(form, "personal_info.last_name")  or ""
-    full_name = f"{first} {last}".strip()
-    if full_name and "Taxes Paid and Verification" in wb.sheetnames:
-        try:
-            wb["Taxes Paid and Verification"]["AO2"] = full_name
-        except Exception:
-            pass
-
-    # ── Special: write PAN in verification ────────────────────────────────────
-    pan = _get_nested(form, "personal_info.pan") or ""
-    if pan and "Taxes Paid and Verification" in wb.sheetnames:
-        try:
-            wb["Taxes Paid and Verification"]["AO3"] = pan
-        except Exception:
-            pass
-
-    # ── Special: 80C deduction line items ─────────────────────────────────────
-    if "80C" in wb.sheetnames:
         sec_80c = _get_nested(form, "deductions.sec_80c") or 0
         if sec_80c and float(sec_80c) > 0:
-            try:
-                wb["80C"]["D9"] = "Various (from Form 16)"
-                wb["80C"]["H9"] = round(float(sec_80c))
-            except Exception:
-                pass
+            write_cell("80C", "D9", "Various (from Form 16)")
+            write_cell("80C", "H9", round(float(sec_80c)))
 
-    # ── Special: 80D sheet ─────────────────────────────────────────────────────
-    if "80D" in wb.sheetnames:
         sec_80d = _get_nested(form, "deductions.sec_80d") or 0
         if sec_80d and float(sec_80d) > 0:
-            try:
-                wb["80D"]["H5"] = round(float(sec_80d))
-            except Exception:
-                pass
+            write_cell("80D", "H5", round(float(sec_80d)))
 
-    # ── Other sources row items ────────────────────────────────────────────────
-    if "Income Details" in wb.sheetnames:
-        ws = wb["Income Details"]
         sbi  = _get_nested(form, "other_sources.savings_bank_interest") or 0
         fd   = _get_nested(form, "other_sources.fd_interest")           or 0
         div  = _get_nested(form, "other_sources.dividends")             or 0
-
-        # Rows 68-71 are OS line items — col J=Nature, AO=Amount
+        
         os_items = []
-        if sbi and float(sbi) > 0:
-            os_items.append(("Interest from Savings Bank", float(sbi)))
-        if fd and float(fd) > 0:
-            os_items.append(("Interest from FD/Deposits", float(fd)))
-        if div and float(div) > 0:
-            os_items.append(("Dividend Income", float(div)))
+        if sbi and float(sbi) > 0: os_items.append(("Interest from Savings Bank", round(float(sbi))))
+        if fd and float(fd) > 0:   os_items.append(("Interest from Deposits", round(float(fd))))
+        if div and float(div) > 0: os_items.append(("Dividend Income", round(float(div))))
 
-        os_rows = [68, 69, 70, 71]
-        for i, (nature, amount) in enumerate(os_items[:4]):
-            r = os_rows[i]
-            try:
-                ws[f"J{r}"] = nature
-                ws[f"AO{r}"] = round(amount)
-            except Exception:
-                pass
+        rows = [68, 69, 70, 71]
+        for i, (nature, amt) in enumerate(os_items[:4]):
+            write_cell("Income Details", f"J{rows[i]}", nature)
+            write_cell("Income Details", f"AO{rows[i]}", amt)
+            filled_count += 2
 
-    wb.save(str(out_path))
-    wb.close()
-
-    print(f"[ITR1Filler] Filled {filled_count} cells -> {out_path}")
-    if skipped:
-        print(f"[ITR1Filler] Skipped {len(skipped)} cells (missing sheet / error)")
+        wb.Save()
+        wb.Close(SaveChanges=False)
+        excel.Quit()
+        print(f"[ITR1Filler] Filled {filled_count} cells -> {out_path}")
+    except Exception as e:
+        print(f"[ITR1Filler] Excel COM Error: {e}")
+        try:
+            excel.Quit()
+        except Exception:
+            pass
+    finally:
+        pythoncom.CoUninitialize()
 
     return out_path
 

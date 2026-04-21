@@ -3,10 +3,6 @@ Form 16 Parser (Part A + Part B)
 ==================================
 Extracts salary, TDS, deductions from Form 16 PDF.
 Handles both text-based and table-based Form 16 layouts.
-
-Banks/Employers usually issue Form 16 in one of these formats:
-  - TRACES-generated (standard govt format) — text-rich, predictable labels
-  - Employer-generated — variable format, needs fuzzy matching
 """
 
 from __future__ import annotations
@@ -152,7 +148,25 @@ def _extract_tds_quarters(text: str) -> tuple[float, float, float, float]:
     return tuple(q)
 
 
-# ── Main parser ───────────────────────────────────────────────────────────────
+def _compute_derived_form16(result: Form16Data):
+    """Compute calculated fields based on extracted raw values."""
+    if result.gross_salary == 0:
+        result.gross_salary = result.salary_as_per_17_1 + result.perquisites_17_2 + result.profits_17_3
+    if result.total_exempt_10 == 0:
+        result.total_exempt_10 = result.hra_10_13a + result.lta_10_10 + result.other_exempt_10
+    if result.standard_deduction_16ia == 0 and result.gross_salary:
+        result.standard_deduction_16ia = min(50000, result.gross_salary)
+    if result.income_under_salary == 0:
+        result.income_under_salary = (
+            result.gross_salary
+            - result.total_exempt_10
+            - result.standard_deduction_16ia
+            - result.entertainment_16ii
+            - result.professional_tax_16iii
+        )
+    if result.tds_deducted_form16 == 0:
+        result.tds_deducted_form16 = result.total_tds_deposited
+
 
 def parse_form16(pdf_path: str) -> Form16Data:
     """
@@ -220,23 +234,7 @@ def parse_form16(pdf_path: str) -> Form16Data:
             elif "rebate" in label and "87" in label:
                 result.rebate_87a_form16 = amount
 
-    # ── Derived / fallback calculations ───────────────────────────────────────
-    if result.gross_salary == 0:
-        result.gross_salary = result.salary_as_per_17_1 + result.perquisites_17_2 + result.profits_17_3
-    if result.total_exempt_10 == 0:
-        result.total_exempt_10 = result.hra_10_13a + result.lta_10_10 + result.other_exempt_10
-    if result.standard_deduction_16ia == 0 and result.gross_salary:
-        result.standard_deduction_16ia = min(50000, result.gross_salary)
-    if result.income_under_salary == 0:
-        result.income_under_salary = (
-            result.gross_salary
-            - result.total_exempt_10
-            - result.standard_deduction_16ia
-            - result.entertainment_16ii
-            - result.professional_tax_16iii
-        )
-    if result.tds_deducted_form16 == 0:
-        result.tds_deducted_form16 = result.total_tds_deposited
+    _compute_derived_form16(result)
 
     # ── Confidence scoring ─────────────────────────────────────────────────────
     required = [result.gross_salary, result.income_under_salary, result.tds_deducted_form16]
@@ -244,12 +242,74 @@ def parse_form16(pdf_path: str) -> Form16Data:
     result.parse_confidence = filled / len(required)
 
     if result.parse_confidence < 0.5:
+        print("[Form16] Low confidence text parse. Falling back to Vision AI...")
+        vision_result = _fallback_vision_form16(pdf_path)
+        if vision_result:
+            return vision_result
+            
         result.warnings.append(
             "Low confidence parse — Form 16 may be scanned/image-based or in an unusual format. "
-            "Consider running OCR pre-processing (e.g. pdf2image + pytesseract)."
+            "Vision AI fallback also failed. Please check the document manually."
         )
 
     return result
+
+
+def _fallback_vision_form16(pdf_path: str) -> Optional[Form16Data]:
+    import fitz
+    import base64
+    from shared.llm_client import complete_vision
+    
+    try:
+        import traceback
+        doc = fitz.open(pdf_path)
+        b64_images = []
+        # Most data is in the first 2 pages (Part A & Part B summaries)
+        for i in range(min(2, len(doc))):
+            pix = doc[i].get_pixmap(dpi=96)
+            b64_images.append(base64.b64encode(pix.tobytes("jpeg")).decode("utf-8"))
+        doc.close()
+        
+        system_prompt = (
+            "You are an expert Indian tax document parser. "
+            "Extract Form 16 details into strict JSON matching the requested keys. "
+            "Return ONLY raw JSON, no markdown, no explanation. "
+            "Keys: employer_name, employer_tan, employer_pan, employee_pan, employee_name, assessment_year, "
+            "period_from, period_to, tds_q1, tds_q2, tds_q3, tds_q4, total_tds_deposited, gross_salary, "
+            "salary_as_per_17_1, perquisites_17_2, profits_17_3, hra_10_13a, lta_10_10, total_exempt_10, "
+            "standard_deduction_16ia, entertainment_16ii, professional_tax_16iii, income_under_salary, "
+            "sec_80c_claimed, sec_80ccc_claimed, sec_80ccd_1_claimed, sec_80ccd_2_claimed, sec_80d_claimed, "
+            "total_vi_a_claimed, taxable_income_form16, tax_payable_form16, rebate_87a_form16, tds_deducted_form16. "
+            "Use 0.0 for missing numeric fields, null for missing strings."
+        )
+        
+        ans = complete_vision("Extract Form 16 data as JSON.", b64_images, system=system_prompt)
+        ans = ans.replace("```json", "").replace("```", "").strip()
+        
+        data = json.loads(ans)
+        
+        result = Form16Data()
+        for k, v in data.items():
+            if hasattr(result, k) and v is not None:
+                if isinstance(getattr(result, k), float):
+                    try:
+                        clean_v = str(v).replace(",", "").replace(" ", "").strip()
+                        setattr(result, k, float(clean_v) if clean_v else 0.0)
+                    except ValueError:
+                        pass
+                else:
+                    setattr(result, k, str(v))
+                    
+        _compute_derived_form16(result)
+        
+        result.parse_confidence = 0.95
+        result.warnings.append("Parsed using Vision AI Fallback (OpenRouter/Gemma-3).")
+        return result
+    except Exception as e:
+        print(f"[Form16 Vision Fallback Error] {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 
 def form16_to_dict(data: Form16Data) -> dict:

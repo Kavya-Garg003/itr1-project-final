@@ -1,0 +1,29 @@
+INFO:     Will watch for changes in these directories: ['E:\\itr1-project-final\\doc-parser']
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+INFO:     Started reloader process [20368] using WatchFiles
+INFO:     Will watch for changes in these directories: ['E:\\itr1-project-final\\rag-service']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [5928] using WatchFiles
+INFO:     Will watch for changes in these directories: ['E:\\itr1-project-final\\agent-orchestrator']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [3020] using WatchFiles
+INFO:     Started server process [20332]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [6612]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [7828]
+INFO:     Waiting for application startup.
+API Gateway running on port 3001
+Services: {
+  docParser: 'http://localhost:8002',
+  ragService: 'http://localhost:8001',
+  agentOrch: 'http://localhost:8000'
+}
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 8.2s
+INFO:     Application startup complete.
