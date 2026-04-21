@@ -241,13 +241,29 @@ export default function UploadPage() {
           className="mt-8 w-full py-3.5 rounded-xl bg-blue-600 text-white font-medium text-base
             hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          {running ? "Analysing documents…" : "Fill My ITR-1 →"}
+          {running ? "Processing Documents..." : "Fill My ITR-1 →"}
         </button>
 
         {!hasForm16 && docs.length > 0 && (
           <p className="text-xs text-center text-amber-600 mt-2">
             Form 16 is required to proceed
           </p>
+        )}
+
+        {running && (
+          <div className="mt-6 border border-blue-100 bg-blue-50/50 rounded-xl p-5 space-y-4">
+            <div className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
+              <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+              Multi-Agent Pipeline Active
+            </div>
+            <div className="space-y-3 text-sm text-blue-800/80">
+              <div className="flex items-center gap-3 animate-pulse"><span className="text-blue-500">✓</span> Initializing Vision Parser OCR...</div>
+              <div className="flex items-center gap-3 animate-pulse" style={{ animationDelay: "500ms" }}><span className="text-blue-500">✓</span> Extracting unstructured image data via Free LLM...</div>
+              <div className="flex items-center gap-3 animate-pulse" style={{ animationDelay: "1500ms" }}><span className="text-blue-500">✓</span> Orchestrator Agent mapping values & routing...</div>
+              <div className="flex items-center gap-3 animate-pulse" style={{ animationDelay: "2500ms" }}><span className="text-indigo-500">⚡</span> RAG AI comparing Old vs New Regimes...</div>
+              <div className="flex items-center gap-3 animate-pulse" style={{ animationDelay: "3500ms" }}><span className="text-indigo-500">⚡</span> Validating returns & Drafting Explanations...</div>
+            </div>
+          </div>
         )}
 
         {/* What happens next */}

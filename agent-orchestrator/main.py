@@ -168,9 +168,14 @@ async def chat_query(req: ChatRequest):
         form = _session_store[req.session_id]["itr1_form"]
         tc   = form.get("tax_computation", {})
         form_ctx = (
-            f"\n\nUser's profile: GTI=₹{tc.get('gross_total_income', 0):,.0f}, "
-            f"Regime={tc.get('regime', 'new')}, "
-            f"Taxable income=₹{tc.get('taxable_income', 0):,.0f}"
+            f"\n\n--- INTERNAL USER TAX PROFILE ---\n"
+            f"Gross Total Income (GTI) = ₹{tc.get('gross_total_income', 0):,.0f}\n"
+            f"Recommended Regime = {tc.get('regime', 'new')}\n"
+            f"Taxable income = ₹{tc.get('taxable_income', 0):,.0f}\n\n"
+            f"Below is a JSON representation of EVERYTHING extracted from their uploaded Form 16 / Bank Statements:\n"
+            f"{__import__('json').dumps(form, indent=2)}\n"
+            f"Use this data strictly if their question explicitly pertains to their documents or tax specifics.\n"
+            f"-----------------------------------\n"
         )
         question += form_ctx
 

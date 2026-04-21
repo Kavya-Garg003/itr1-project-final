@@ -178,6 +178,59 @@ def complete_with_system(
     return complete(user, system=system, temperature=temperature, providers=providers)
 
 
+def complete_vision(
+    prompt:             str,
+    base64_images:      list[str],
+    system:             Optional[str] = None,
+    temperature:        float         = 0.0,
+    providers:          Optional[list[dict]] = None,
+) -> str:
+    """Send an image-capable completion request to Vision-supported providers."""
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    
+    content = []
+    for b64 in base64_images:
+        content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}})
+    content.append({"type": "text", "text": prompt})
+    
+    messages.append({"role": "user", "content": content})
+
+    vision_providers = [
+        {
+            "name":     "openrouter-llama-vision",
+            "label":    "OpenRouter Llama-3.2 90B Vision (free)",
+            "base_url": "https://openrouter.ai/api/v1",
+            "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
+            "model":    "meta-llama/llama-3.2-90b-vision-instruct:free",
+            "max_tokens": 2048,
+            "extra_headers": {
+                "HTTP-Referer": "https://itr1-rag-agent.local",
+                "X-Title":      "ITR-1 RAG Agent",
+            },
+        },
+        {
+            "name":     "groq-11b-vision",
+            "label":    "Groq Llama-3.2 11B Vision",
+            "base_url": "https://api.groq.com/openai/v1",
+            "api_key":  lambda: os.getenv("GROQ_API_KEY", ""),
+            "model":    "llama-3.2-11b-vision-preview",
+            "max_tokens": 2048,
+        },
+        {
+            "name":     "groq-90b-vision",
+            "label":    "Groq Llama-3.2 90B Vision",
+            "base_url": "https://api.groq.com/openai/v1",
+            "api_key":  lambda: os.getenv("GROQ_API_KEY", ""),
+            "model":    "llama-3.2-90b-vision-preview",
+            "max_tokens": 2048,
+        }
+    ]
+
+    return _try_providers(messages, temperature, providers or vision_providers)
+
+
 def _try_providers(
     messages:    list[dict],
     temperature: float,
