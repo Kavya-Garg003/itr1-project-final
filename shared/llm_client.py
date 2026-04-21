@@ -43,47 +43,27 @@ log = logging.getLogger(__name__)
 
 PROVIDERS = [
     {
-        "name":     "openrouter-gemini-2-flash",
-        "label":    "OpenRouter Gemini 2.0 Flash (free)",
+        "name":     "openrouter-gemini-1-5-flash",
+        "label":    "OpenRouter Gemini 1.5 Flash (free)",
         "base_url": "https://openrouter.ai/api/v1",
         "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
-        "model":    "google/gemini-2.0-flash-exp:free",
+        "model":    "google/gemini-flash-1.5-8b",
         "max_tokens": 4000,
-        "extra_headers": {
-            "HTTP-Referer": "https://itr1-rag-agent.local",
-            "X-Title":      "ITR-1 RAG Agent",
-        },
     },
     {
-        "name":     "openrouter-deepseek-r1",
-        "label":    "OpenRouter DeepSeek R1 (free)",
-        "base_url": "https://openrouter.ai/api/v1",
-        "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
-        "model":    "deepseek/deepseek-r1:free",
+        "name":     "groq-llama-4-scout",
+        "label":    "Groq Llama-4 Scout 17B",
+        "base_url": "https://api.groq.com/openai/v1",
+        "api_key":  lambda: os.getenv("GROQ_API_KEY", ""),
+        "model":    "meta-llama/llama-4-scout-17b-16e-instruct",
         "max_tokens": 4000,
-        "extra_headers": {
-            "HTTP-Referer": "https://itr1-rag-agent.local",
-            "X-Title":      "ITR-1 RAG Agent",
-        },
     },
     {
-        "name":     "openrouter-llama-70b",
-        "label":    "OpenRouter llama-3.3-70b (free)",
+        "name":     "openrouter-llama-3-3-70b",
+        "label":    "OpenRouter Llama 3.3 70B (free)",
         "base_url": "https://openrouter.ai/api/v1",
         "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
         "model":    "meta-llama/llama-3.3-70b-instruct:free",
-        "max_tokens": 4000,
-        "extra_headers": {
-            "HTTP-Referer": "https://itr1-rag-agent.local",
-            "X-Title":      "ITR-1 RAG Agent",
-        },
-    },
-    {
-        "name":     "groq-70b",
-        "label":    "Groq llama-3.3-70b",
-        "base_url": "https://api.groq.com/openai/v1",
-        "api_key":  lambda: os.getenv("GROQ_API_KEY", ""),
-        "model":    "llama-3.3-70b-versatile",
         "max_tokens": 4000,
     },
 ]
@@ -144,6 +124,7 @@ def complete(
     system:      Optional[str] = None,
     temperature: float         = 0.0,
     providers:   Optional[list[dict]] = None,
+    validate_fn: Optional[callable] = None,
 ) -> str:
     """
     Send a completion request, trying providers in order until one succeeds.
@@ -153,6 +134,7 @@ def complete(
         system:      Optional system prompt.
         temperature: 0.0 for deterministic (tax answers), 0.3 for more variety.
         providers:   Override the default provider list (for testing).
+        validate_fn: Optional function to validate the result before accepting.
 
     Returns:
         The model's response as a string.
@@ -165,7 +147,7 @@ def complete(
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
 
-    return _try_providers(messages, temperature, providers or PROVIDERS)
+    return _try_providers(messages, temperature, providers or PROVIDERS, validate_fn=validate_fn)
 
 
 def complete_with_system(
@@ -173,9 +155,10 @@ def complete_with_system(
     user:        str,
     temperature: float = 0.0,
     providers:   Optional[list[dict]] = None,
+    validate_fn: Optional[callable] = None,
 ) -> str:
     """Convenience wrapper — common pattern in the codebase."""
-    return complete(user, system=system, temperature=temperature, providers=providers)
+    return complete(user, system=system, temperature=temperature, providers=providers, validate_fn=validate_fn)
 
 
 def complete_vision(
@@ -184,6 +167,7 @@ def complete_vision(
     system:             Optional[str] = None,
     temperature:        float         = 0.0,
     providers:          Optional[list[dict]] = None,
+    validate_fn:        Optional[callable] = None,
 ) -> str:
     """Send an image-capable completion request to Vision-supported providers."""
     messages = []
@@ -199,42 +183,39 @@ def complete_vision(
 
     vision_providers = [
         {
-            "name":     "openrouter-gemma-3-27b",
-            "label":    "OpenRouter Gemma-3 27B Vision (free)",
+            "name":     "openrouter-gemini-1-5-flash",
+            "label":    "OpenRouter Gemini 1.5 Flash (free)",
             "base_url": "https://openrouter.ai/api/v1",
             "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
-            "model":    "google/gemma-3-27b-it:free",
-            "max_tokens": 2048,
-            "extra_headers": {
-                "HTTP-Referer": "https://itr1-rag-agent.local",
-                "X-Title":      "ITR-1 RAG Agent",
-            },
-        },
-        {
-            "name":     "openrouter-gemma-3-12b",
-            "label":    "OpenRouter Gemma-3 12B Vision (free)",
-            "base_url": "https://openrouter.ai/api/v1",
-            "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
-            "model":    "google/gemma-3-12b-it:free",
+            "model":    "google/gemini-flash-1.5-8b",
             "max_tokens": 2048,
         },
         {
-            "name":     "openrouter-nemotron-vl",
-            "label":    "OpenRouter Nemotron Vision (free)",
+            "name":     "groq-llama-4-scout",
+            "label":    "Groq Llama 4 Scout 17B Vision",
+            "base_url": "https://api.groq.com/openai/v1",
+            "api_key":  lambda: os.getenv("GROQ_API_KEY", ""),
+            "model":    "meta-llama/llama-4-scout-17b-16e-instruct",
+            "max_tokens": 2048,
+        },
+        {
+            "name":     "openrouter-llama-3-2-vision",
+            "label":    "OpenRouter Llama 3.2 11B Vision (free)",
             "base_url": "https://openrouter.ai/api/v1",
             "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
-            "model":    "nvidia/nemotron-nano-12b-v2-vl:free",
+            "model":    "meta-llama/llama-3.2-11b-vision-instruct:free",
             "max_tokens": 2048,
         }
     ]
 
-    return _try_providers(messages, temperature, providers or vision_providers)
+    return _try_providers(messages, temperature, providers or vision_providers, validate_fn=validate_fn)
 
 
 def _try_providers(
     messages:    list[dict],
     temperature: float,
     provider_list: list[dict],
+    validate_fn:   Optional[callable] = None,
 ) -> str:
     errors = []
 
@@ -247,6 +228,12 @@ def _try_providers(
         try:
             log.info("Trying %s...", provider["label"])
             result = _call_provider(provider, messages, temperature)
+            
+            if validate_fn and not validate_fn(result):
+                log.warning("Validation failed for %s result", provider["label"])
+                errors.append(f"{provider['label']}: Validation failed")
+                continue
+
             log.info("Success with %s", provider["label"])
             return result
 

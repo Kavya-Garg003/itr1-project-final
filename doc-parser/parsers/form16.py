@@ -190,67 +190,66 @@ def parse_form16(pdf_path: str) -> Form16Data:
 
     result.raw_text_snippet = full_text[:500]
 
-    # ── Part A extraction ──────────────────────────────────────────────────────
-    for field_name, patterns in PART_A_PATTERNS.items():
-        val = _extract_field(patterns, full_text)
-        if val:
-            if field_name == "total_tds_deposited":
-                setattr(result, field_name, _parse_amount(val))
-            else:
-                setattr(result, field_name, val.strip())
+    # ── LLM-Powered Structured Extraction ──────────────────────────────────────────
+    from .pdf_utils import pdf_to_structured_text
+    structured_content = pdf_to_structured_text(pdf_path)
+    
+    if len(structured_content.strip()) > 100:
+        print("[Form16] Using Structured LLM-on-Text parsing...")
+        from shared.llm_client import complete_with_system
+        
+        prompt = f"Extract all Form 16 tax details from this structured text (Markdown tables included):\n\n{structured_content[:20000]}"
+        system_prompt = (
+            "You are an expert Indian tax document parser. "
+            "Extract details into strict JSON. Return ONLY raw JSON. "
+            "IMPORTANT: 'Gross Salary' is usually listed as 'Salary as per provisions contained in section 17(1)'. "
+            "Keys: employer_name, employer_tan, employer_pan, employee_pan, employee_name, assessment_year, "
+            "period_from, period_to, total_tds_deposited, gross_salary, salary_as_per_17_1, "
+            "perquisites_17_2, profits_17_3, hra_10_13a, total_exempt_10, "
+            "standard_deduction_16ia, entertainment_16ii, professional_tax_16iii, income_under_salary, "
+            "sec_80c_claimed, sec_80ccc_claimed, sec_80ccd_1_claimed, sec_80ccd_2_claimed, sec_80d_claimed, "
+            "total_vi_a_claimed, taxable_income_form16, tax_payable_form16, rebate_87a_form16, tds_deducted_form16. "
+            "Use 0.0 for missing numeric fields."
+        )
 
-    q1, q2, q3, q4 = _extract_tds_quarters(full_text)
-    result.tds_q1, result.tds_q2, result.tds_q3, result.tds_q4 = q1, q2, q3, q4
-    if not result.total_tds_deposited:
-        result.total_tds_deposited = q1 + q2 + q3 + q4
+        def validate_llm_text(ans_str: str) -> bool:
+            try:
+                ans_str = ans_str.replace("```json", "").replace("```", "").strip()
+                data = json.loads(ans_str)
+                # Success if we find either Gross Salary OR Total TDS (minimum evidence of parsing)
+                return float(str(data.get("gross_salary", 0)).replace(",", "")) > 0 or \
+                       float(str(data.get("total_tds_deposited", 0)).replace(",", "")) > 0
+            except: return False
 
-    # ── Part B extraction ──────────────────────────────────────────────────────
-    for field_name, patterns in PART_B_PATTERNS.items():
-        val = _extract_field(patterns, full_text)
-        if val:
-            setattr(result, field_name, _parse_amount(val))
-
-    # ── Table-based extraction (fallback / cross-check) ────────────────────────
-    for table in tables_data:
-        for row in table:
-            if not row or len(row) < 2:
-                continue
-            label = str(row[0] or "").strip().lower()
-            value_cell = None
-            for cell in row[1:]:
-                if cell and re.search(r"[\d,]+", str(cell)):
-                    value_cell = cell
-                    break
-            if value_cell is None:
-                continue
-            amount = _parse_amount(str(value_cell))
-
-            if "gross salary" in label and result.gross_salary == 0:
-                result.gross_salary = amount
-            elif "standard deduction" in label and result.standard_deduction_16ia == 0:
-                result.standard_deduction_16ia = amount
-            elif "professional tax" in label and result.professional_tax_16iii == 0:
-                result.professional_tax_16iii = amount
-            elif "rebate" in label and "87" in label:
-                result.rebate_87a_form16 = amount
+        try:
+            ans = complete_with_system(system_prompt, prompt, validate_fn=validate_llm_text)
+            ans = ans.replace("```json", "").replace("```", "").strip()
+            data = json.loads(ans)
+            for k, v in data.items():
+                if hasattr(result, k) and v is not None:
+                    if isinstance(getattr(result, k), float):
+                        try:
+                            clean_v = str(v).replace(",", "").replace(" ", "").strip()
+                            setattr(result, k, float(clean_v) if clean_v else 0.0)
+                        except: pass
+                    else:
+                        setattr(result, k, str(v).strip())
+            result.parse_confidence = 1.0
+        except Exception as e:
+            print(f"[Form16] LLM-on-Text failed: {e}")
 
     _compute_derived_form16(result)
 
-    # ── Confidence scoring ─────────────────────────────────────────────────────
-    required = [result.gross_salary, result.income_under_salary, result.tds_deducted_form16]
-    filled   = sum(1 for v in required if v > 0)
-    result.parse_confidence = filled / len(required)
-
-    if result.parse_confidence < 0.5:
-        print("[Form16] Low confidence text parse. Falling back to Vision AI...")
+    # ── Vision Fallback (Only if Text Parsing failed to find Salary) ────────────────
+    if result.gross_salary == 0:
+        print("[Form16] Gross Salary is still 0. Falling back to Vision AI (OCR)...")
         vision_result = _fallback_vision_form16(pdf_path)
-        if vision_result:
+        if vision_result and vision_result.gross_salary > 0:
             return vision_result
             
-        result.warnings.append(
-            "Low confidence parse — Form 16 may be scanned/image-based or in an unusual format. "
-            "Vision AI fallback also failed. Please check the document manually."
-        )
+    # Final cross-check: if gross salary is 0 but we have income under salary, use that
+    if result.gross_salary == 0 and result.income_under_salary > 0:
+        result.gross_salary = result.income_under_salary + result.standard_deduction_16ia
 
     return result
 
@@ -264,9 +263,9 @@ def _fallback_vision_form16(pdf_path: str) -> Optional[Form16Data]:
         import traceback
         doc = fitz.open(pdf_path)
         b64_images = []
-        # Most data is in the first 2 pages (Part A & Part B summaries)
-        for i in range(min(2, len(doc))):
-            pix = doc[i].get_pixmap(dpi=96)
+        # Support longer Form 16s where Part B might be on page 3-5
+        for i in range(min(6, len(doc))):
+            pix = doc[i].get_pixmap(dpi=120)
             b64_images.append(base64.b64encode(pix.tobytes("jpeg")).decode("utf-8"))
         doc.close()
         
@@ -283,9 +282,30 @@ def _fallback_vision_form16(pdf_path: str) -> Optional[Form16Data]:
             "Use 0.0 for missing numeric fields, null for missing strings."
         )
         
-        ans = complete_vision("Extract Form 16 data as JSON.", b64_images, system=system_prompt)
+        def validate_form16_json(ans_str: str) -> bool:
+            try:
+                # Clean and parse JSON
+                clean_ans = ans_str.replace("```json", "").replace("```", "").strip()
+                data = json.loads(clean_ans)
+                # We expect gross_salary to be non-zero for a valid Form 16 Part B
+                gs = float(str(data.get("gross_salary", 0)).replace(",", ""))
+                if gs > 0:
+                    return True
+                # Also check constituent fields if gross_salary is 0
+                s171 = float(str(data.get("salary_as_per_17_1", 0)).replace(",", ""))
+                if s171 > 0:
+                    return True
+                return False
+            except:
+                return False
+
+        ans = complete_vision(
+            "Extract Form 16 data as JSON. CRITICAL: Do NOT miss the Gross Salary (Sec 17(1)) usually found in Part B.",
+            b64_images,
+            system=system_prompt,
+            validate_fn=validate_form16_json
+        )
         ans = ans.replace("```json", "").replace("```", "").strip()
-        
         data = json.loads(ans)
         
         result = Form16Data()
