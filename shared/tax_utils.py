@@ -96,27 +96,19 @@ def compute_surcharge(income: float, tax: float, slabs: list[tuple]) -> float:
     return tax * rate
 
 
-def compute_tax(
+def compute_tax_2025(
     taxable_income: float,
-    regime: str = "new",
-    ay:     str = "AY2024-25",
+    ay: str = "AY2024-25",
 ) -> dict[str, float]:
     """
-    Full tax computation for a given taxable income and regime.
-    Returns a breakdown dict.
+    Full tax computation strictly under 2025 (New) Regime.
     """
     cfg = get_config(ay)
 
-    if regime == "new":
-        slabs           = cfg["new_regime_slabs"]
-        rebate_limit    = cfg["new_regime_rebate_87a_limit"]
-        rebate_max      = cfg["new_regime_rebate_87a_amount"]
-        surcharge_slabs = cfg["surcharge_slabs_new"]
-    else:
-        slabs           = cfg["old_regime_slabs"]
-        rebate_limit    = cfg["old_regime_rebate_87a_limit"]
-        rebate_max      = cfg["old_regime_rebate_87a_amount"]
-        surcharge_slabs = cfg["surcharge_slabs"]
+    slabs           = cfg["new_regime_slabs"]
+    rebate_limit    = cfg["new_regime_rebate_87a_limit"]
+    rebate_max      = cfg["new_regime_rebate_87a_amount"]
+    surcharge_slabs = cfg["surcharge_slabs_new"]
 
     tax_before_rebate = compute_tax_on_slabs(taxable_income, slabs)
     rebate_87a        = min(tax_before_rebate, rebate_max) if taxable_income <= rebate_limit else 0.0
@@ -134,69 +126,7 @@ def compute_tax(
         "total_tax":             round(total, 2),
     }
 
-
-# ── Regime comparison ─────────────────────────────────────────────────────────
-
-def compare_regimes(
-    gross_total_income:   float,
-    deductions_old:       float,  # total deductions available under old regime
-    tds_deducted:         float   = 0.0,
-    ay:                   str     = "AY2024-25",
-) -> dict:
-    """
-    Compare old vs new regime tax liability and recommend.
-    Returns breakdown + recommendation with reasoning.
-    """
-    cfg = get_config(ay)
-
-    # Old regime
-    taxable_old = max(0, gross_total_income - deductions_old)
-    tax_old_breakdown = compute_tax(taxable_old, regime="old", ay=ay)
-    tax_old = tax_old_breakdown["total_tax"]
-
-    # New regime — standard deduction from AY 2024-25
-    taxable_new = max(0, gross_total_income - cfg["standard_deduction_new_regime"])
-    tax_new_breakdown = compute_tax(taxable_new, regime="new", ay=ay)
-    tax_new = tax_new_breakdown["total_tax"]
-
-    saving = tax_old - tax_new
-    recommended = "new" if tax_new <= tax_old else "old"
-
-    # Build reasoning
-    if recommended == "new":
-        reason = (
-            f"New regime saves ₹{abs(saving):,.0f}. "
-            f"Your deductions of ₹{deductions_old:,.0f} are not enough to make the old regime "
-            f"more beneficial. The new regime's simplified slabs result in lower tax."
-        )
-    else:
-        reason = (
-            f"Old regime saves ₹{abs(saving):,.0f}. "
-            f"Your deductions of ₹{deductions_old:,.0f} significantly reduce your taxable income. "
-            f"Maximise 80C (₹{cfg['sec_80c_limit']:,.0f}), 80D, and NPS (80CCD 1B ₹{cfg['sec_80ccd_1b_limit']:,.0f}) "
-            f"to keep old regime advantageous."
-        )
-
-    return {
-        "old_regime": {
-            "deductions":     deductions_old,
-            "taxable_income": taxable_old,
-            **tax_old_breakdown,
-        },
-        "new_regime": {
-            "deductions":     cfg["standard_deduction_new_regime"],
-            "taxable_income": taxable_new,
-            **tax_new_breakdown,
-        },
-        "recommended_regime": recommended,
-        "saving":             abs(saving),
-        "reasoning":          reason,
-        "net_payable_old":    max(0, tax_old - tds_deducted),
-        "net_payable_new":    max(0, tax_new - tds_deducted),
-        "refund_old":         max(0, tds_deducted - tax_old),
-        "refund_new":         max(0, tds_deducted - tax_new),
-    }
-
+# (Regime comparison removed for strict 2025 new regime compliance)
 
 # ── HRA computation ───────────────────────────────────────────────────────────
 
@@ -233,40 +163,15 @@ def compute_hra_exemption(
 # ── Deduction limit enforcement ───────────────────────────────────────────────
 
 def enforce_deduction_limits(deductions: dict, ay: str = "AY2024-25") -> dict:
-    """Apply all statutory caps to deductions dict. Returns corrected dict + warnings."""
-    cfg = get_config(ay)
+    """Under 2025 New Regime, only 80CCD(2) and standard deduction are allowed."""
     warnings = []
-
-    # 80C family cap
-    raw_80c_family = deductions.get("sec_80c", 0) + deductions.get("sec_80ccc", 0) + deductions.get("sec_80ccd_1", 0)
-    if raw_80c_family > cfg["sec_80c_limit"]:
-        warnings.append(f"80C/80CCC/80CCD(1) total ₹{raw_80c_family:,.0f} exceeds cap ₹{cfg['sec_80c_limit']:,.0f}. Capped.")
-
-    capped_80c_family = min(raw_80c_family, cfg["sec_80c_limit"])
-
-    # 80CCD(1B) cap
-    raw_1b = deductions.get("sec_80ccd_1b", 0)
-    if raw_1b > cfg["sec_80ccd_1b_limit"]:
-        warnings.append(f"80CCD(1B) ₹{raw_1b:,.0f} exceeds cap ₹{cfg['sec_80ccd_1b_limit']:,.0f}.")
-    capped_1b = min(raw_1b, cfg["sec_80ccd_1b_limit"])
-
-    # 80TTA / 80TTB (mutually exclusive — 80TTB is for seniors)
-    if deductions.get("sec_80tta", 0) > 0 and deductions.get("sec_80ttb", 0) > 0:
-        warnings.append("Both 80TTA and 80TTB claimed — 80TTB is only for senior citizens. Remove 80TTA.")
-    tta = min(deductions.get("sec_80tta", 0), cfg["sec_80tta_limit"])
-    ttb = min(deductions.get("sec_80ttb", 0), cfg["sec_80ttb_limit"])
+    
+    # 80C, 80D, etc. are not allowed.
+    if deductions.get("sec_80c", 0) > 0 or deductions.get("sec_80d", 0) > 0:
+        warnings.append("80C, 80D and other Chapter VI-A deductions are not applicable under the 2025 New Tax Regime.")
 
     return {
-        "capped_80c_family":   capped_80c_family,
-        "capped_80ccd_1b":     capped_1b,
-        "capped_80d":          deductions.get("sec_80d", 0),
-        "capped_80tta":        tta,
-        "capped_80ttb":        ttb,
-        "sec_80ccd_2":         deductions.get("sec_80ccd_2", 0),
-        "sec_80e":             deductions.get("sec_80e", 0),
-        "sec_80gg":            deductions.get("sec_80gg", 0),
-        "total":               (capped_80c_family + capped_1b + deductions.get("sec_80d", 0) +
-                                tta + ttb + deductions.get("sec_80ccd_2", 0) +
-                                deductions.get("sec_80e", 0) + deductions.get("sec_80gg", 0)),
-        "warnings":            warnings,
+        "sec_80ccd_2": deductions.get("sec_80ccd_2", 0),
+        "total":       deductions.get("sec_80ccd_2", 0),
+        "warnings":    warnings,
     }

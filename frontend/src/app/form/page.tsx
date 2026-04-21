@@ -61,10 +61,10 @@ function FieldRow({
   };
 
   return (
-    <div className={`flex items-start gap-3 py-3 border-b last:border-b-0 ${conf?.flagged ? "bg-red-50" : ""}`}>
+    <div className={`flex items-start gap-4 py-4 border-b border-white/10 last:border-b-0 ${conf?.flagged ? "bg-red-900/20 px-3 rounded-lg -mx-3" : ""}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-sm text-gray-600 truncate">{label}</span>
+          <span className="text-sm text-slate-300 font-medium truncate">{label}</span>
           {conf?.flagged && (
             <span className="text-xs text-red-600 bg-red-100 rounded px-1.5 py-0.5 shrink-0">
               Review needed
@@ -78,31 +78,31 @@ function FieldRow({
 
       <div className="flex items-center gap-3 shrink-0">
         {/* Confidence bar */}
-        {conf && (
-          <div className="w-20 flex items-center gap-1.5 hide-on-print">
-            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          {conf && (
+          <div className="w-24 flex items-center gap-2 hide-on-print">
+            <div className="flex-1 h-2 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
               <div className={`h-full ${barColor} rounded-full`} style={{ width: `${pct}%` }} />
             </div>
-            <span className="text-xs text-gray-400 w-7 text-right">{pct}%</span>
+            <span className="text-xs text-slate-400 w-8 text-right font-mono">{pct}%</span>
           </div>
         )}
 
         {/* Source badge */}
         {conf?.source && (
-          <span className="text-xs text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 hidden sm:block">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-blue-300 bg-blue-900/30 border border-blue-500/20 rounded px-2 py-1 hidden sm:block">
             {sourceLabel[conf.source] || conf.source}
           </span>
         )}
 
         {/* Value */}
-        <span className={`text-sm font-medium w-28 text-right ${!value || value === 0 ? "text-gray-300" : "text-gray-900"}`}>
+        <span className={`text-sm font-semibold w-32 text-right ${!value || value === 0 ? "text-slate-600" : "text-slate-100"}`}>
           {display}
         </span>
 
         {/* Edit button */}
         <button
           onClick={() => onEdit(fieldPath, label, value)}
-          className="text-gray-300 hover:text-blue-500 text-sm hide-on-print"
+          className="text-slate-500 hover:text-blue-400 transition-colors text-sm hide-on-print ml-2"
           title="Edit"
         >
           ✎
@@ -126,16 +126,16 @@ function SectionCard({
   total?:   { label: string; value: number };
 }) {
   return (
-    <div className="border rounded-xl bg-white overflow-hidden">
-      <div className="px-5 py-3.5 bg-gray-50 border-b flex items-center gap-2">
-        <span>{emoji}</span>
-        <span className="font-medium text-gray-800 text-sm">{title}</span>
+    <div className="glass-card overflow-hidden mb-6">
+      <div className="px-6 py-4 glass-header flex items-center gap-3">
+        <span className="text-xl">{emoji}</span>
+        <span className="font-semibold text-slate-100 text-sm tracking-wide uppercase">{title}</span>
       </div>
-      <div className="px-5">{children}</div>
+      <div className="px-6 py-2">{children}</div>
       {total && (
-        <div className="px-5 py-3 border-t bg-blue-50 flex justify-between items-center">
-          <span className="text-sm font-medium text-blue-800">{total.label}</span>
-          <span className="text-base font-semibold text-blue-900">
+        <div className="px-6 py-4 border-t border-white/10 bg-blue-900/10 flex justify-between items-center">
+          <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest">{total.label}</span>
+          <span className="text-lg font-bold text-blue-100">
             ₹{total.value.toLocaleString("en-IN")}
           </span>
         </div>
@@ -178,29 +178,29 @@ function EditModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-        <div className="font-medium text-gray-900 mb-1">{label}</div>
-        <div className="text-xs text-gray-400 mb-4 font-mono">{field}</div>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="glass-card w-full max-w-md p-8 relative">
+        <div className="font-bold text-lg text-slate-100 mb-2">{label}</div>
+        <div className="text-xs text-blue-400 mb-6 font-mono tracking-wider">{field}</div>
         <input
           type="text"
           value={val}
           onChange={(e) => setVal(e.target.value)}
-          className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 mb-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
         />
         <input
           type="text"
-          placeholder="Reason for change (optional)"
+          placeholder="Reason for change required by audit trail"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 mb-6 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
         />
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2 rounded-lg border text-sm text-gray-600 hover:bg-gray-50">
+        <div className="flex gap-4">
+          <button onClick={onClose} className="flex-1 py-3 justify-center rounded-xl border border-white/10 text-sm text-slate-300 font-medium hover:bg-white/5 transition-colors">
             Cancel
           </button>
-          <button onClick={save} disabled={saving} className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50">
-            {saving ? "Saving…" : "Save"}
+          <button onClick={save} disabled={saving} className="flex-1 py-3 justify-center rounded-xl bg-blue-600 font-medium text-white text-sm hover:bg-blue-700 shadow-[0_0_15px_rgba(37,99,235,0.3)] disabled:opacity-50 transition-all">
+            {saving ? "Updating..." : "Save Override"}
           </button>
         </div>
       </div>
@@ -256,52 +256,51 @@ function FormPageInner() {
   const F = (path: string) => conf[path];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-4 py-10">
+    <div className="min-h-screen pt-20 pb-16 relative overflow-hidden">
+      {/* Dynamic Background */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px] mix-blend-screen pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] mix-blend-screen pointer-events-none" />
+
+      <div className="max-w-4xl mx-auto px-4 relative z-10 fade-in-up">
         {/* Header */}
-        <div className="mb-6 flex items-start justify-between">
+        <div className="glass-card mb-8 p-6 flex flex-col md:flex-row items-start md:items-center justify-between rounded-2xl">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Your ITR-1 (Sahaj)</h1>
-            <div className="text-sm text-gray-400 mt-0.5">AY 2024-25 · Auto-filled by AI</div>
+            <h1 className="text-3xl font-bold text-slate-100 flex items-center">
+              ITR-1 (Sahaj) Dashboard
+              <span className="ml-4 text-xs font-semibold bg-green-500/20 text-green-400 px-3 py-1 rounded-full border border-green-500/30">VERIFIED</span>
+            </h1>
+            <div className="text-slate-400 mt-2 font-medium tracking-wide">
+              AY 2024-25 <span className="mx-2">•</span> 2025 NEW REGIME STRICT
+            </div>
           </div>
-          <div className="flex gap-2 hide-on-print">
+          <div className="flex gap-3 hide-on-print mt-4 md:mt-0">
             <button
               onClick={() => window.print()}
-              className="text-sm bg-indigo-600 font-medium text-white px-4 py-2 rounded-xl hover:bg-indigo-700 shadow-sm transition"
+              className="px-5 py-2.5 rounded-xl border border-white/10 text-slate-300 text-sm font-semibold hover:bg-white/5 transition-colors"
             >
-              <span>🖨️</span> PDF Report
+              Print PDF
             </button>
             <a
               href={`${API}/api/pipeline/export/${sessionId}`}
               target="_blank"
-              className="text-sm bg-white border border-gray-200 font-medium text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-50 transition"
-              title="Download raw ITD Portal compatible JSON."
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] transition-all"
             >
-              ITD JSON
+              Export JSON
             </a>
           </div>
         </div>
 
-        {/* Validation flags */}
         {flags.length > 0 && (
-          <div className="mb-5 space-y-2">
+          <div className="mb-8 space-y-3">
             {flags.map((f, i) => (
-              <div key={i} className={`rounded-lg px-4 py-3 text-sm border
-                ${f.severity === "error"   ? "bg-red-50 border-red-200 text-red-800"
-                : f.severity === "warning" ? "bg-amber-50 border-amber-200 text-amber-800"
-                : "bg-blue-50 border-blue-200 text-blue-800"}`}>
-                <span className="font-medium capitalize">{f.severity}:</span> {f.message}
-                {f.suggestion && <div className="text-xs mt-1 opacity-80">→ {f.suggestion}</div>}
+              <div key={i} className={`rounded-xl px-5 py-4 text-sm border flex flex-col
+                ${f.severity === "error"   ? "glass-card border-red-500/30 text-red-200 bg-red-900/10"
+                : f.severity === "warning" ? "glass-card border-amber-500/30 text-amber-200 bg-amber-900/10"
+                : "glass-card border-blue-500/30 text-blue-200 bg-blue-900/10"}`}>
+                <div><span className="font-bold uppercase tracking-wider text-xs mr-2">{f.severity}:</span> {f.message}</div>
+                {f.suggestion && <div className="text-xs mt-2 opacity-70 border-t border-white/10 pt-2 font-mono">→ {f.suggestion}</div>}
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Regime recommendation */}
-        {data.explanations?.regime_recommendation && (
-          <div className="mb-5 bg-green-50 border border-green-200 rounded-xl px-5 py-4 text-sm text-green-800">
-            <div className="font-medium mb-1">💡 Regime recommendation</div>
-            {data.explanations.regime_recommendation}
           </div>
         )}
 
@@ -377,35 +376,37 @@ function FormPageInner() {
           </SectionCard>
 
           {/* Final result */}
-          <div className={`rounded-xl px-6 py-5 text-center font-medium border
-            ${Number(tc?.refund || 0) > 0
-              ? "bg-green-50 border-green-200 text-green-900"
-              : "bg-amber-50 border-amber-200 text-amber-900"}`}>
+          <div className={`glass-card p-8 text-center flex flex-col items-center justify-center border-t-4
+            ${Number(tc?.refund || 0) > 0 ? "border-t-green-500" : "border-t-amber-500"}`}>
             {Number(tc?.refund || 0) > 0 ? (
               <>
-                <div className="text-2xl font-bold">
-                  Refund: ₹{Number(tc?.refund || 0).toLocaleString("en-IN")}
+                <div className="text-sm font-bold text-green-400 uppercase tracking-widest mb-2">Estimated Refund</div>
+                <div className="text-4xl md:text-5xl font-bold text-slate-100">
+                  ₹{Number(tc?.refund || 0).toLocaleString("en-IN")}
                 </div>
-                <div className="text-sm mt-1 opacity-70">Expected refund to your bank account</div>
+                <div className="text-sm mt-3 text-slate-400">Directly credited to your registered bank account</div>
               </>
             ) : (
               <>
-                <div className="text-2xl font-bold">
-                  Tax payable: ₹{Number(tc?.tax_payable || 0).toLocaleString("en-IN")}
+                <div className="text-sm font-bold text-amber-500 uppercase tracking-widest mb-2">Net Tax Payable</div>
+                <div className="text-4xl md:text-5xl font-bold text-slate-100">
+                  ₹{Number(tc?.tax_payable || 0).toLocaleString("en-IN")}
                 </div>
-                <div className="text-sm mt-1 opacity-70">Pay before filing deadline</div>
+                <div className="text-sm mt-3 text-slate-400">Please clear dues before filing deadline</div>
               </>
             )}
           </div>
         </div>
 
-        {/* Chat button */}
-        <div className="mt-8 text-center hide-on-print pb-8">
+        {/* Chat Float */}
+        <div className="mt-12 flex justify-center hide-on-print">
           <a
             href={`/chat?session=${sessionId}`}
-            className="inline-flex items-center gap-2 text-sm bg-white border shadow-sm border-indigo-200 text-indigo-700 font-medium px-6 py-3 rounded-xl hover:bg-indigo-50 transition group"
+            className="group relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full text-white font-bold text-lg shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:shadow-[0_0_40px_rgba(147,51,234,0.6)] transition-all transform hover:-translate-y-1"
           >
-             Chat with AI about this specific return <span className="group-hover:translate-x-1 transition-transform">→</span>
+             <span className="text-2xl">🤖</span>
+             <span>Chat with Contextual Tax AI</span>
+             <span className="group-hover:translate-x-2 transition-transform duration-300">→</span>
           </a>
         </div>
       </div>

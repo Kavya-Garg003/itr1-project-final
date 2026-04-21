@@ -1,19 +1,19 @@
 INFO:     Will watch for changes in these directories: ['E:\\itr1-project-final\\doc-parser']
 INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
-INFO:     Started reloader process [19276] using WatchFiles
-INFO:     Started server process [2972]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
+INFO:     Started reloader process [3156] using WatchFiles
 INFO:     Will watch for changes in these directories: ['E:\\itr1-project-final\\rag-service']
 INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [19800] using WatchFiles
-INFO:     Started server process [14072]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
+INFO:     Started reloader process [17960] using WatchFiles
 INFO:     Will watch for changes in these directories: ['E:\\itr1-project-final\\agent-orchestrator']
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [15120] using WatchFiles
-INFO:     Started server process [18844]
+INFO:     Started reloader process [6276] using WatchFiles
+INFO:     Started server process [22012]
+INFO:     Waiting for application startup.
+INFO:     Started server process [18480]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Application startup complete.
+INFO:     Started server process [17272]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 API Gateway running on port 3001
@@ -26,16 +26,21 @@ Services: {
   - Local:        http://localhost:3000
 
  ✓ Starting...
- ✓ Ready in 2.7s
- ○ Compiling /upload ...
- ✓ Compiled /upload in 1492ms (446 modules)
- GET /upload 200 in 1836ms
-Provider openrouter-gemma-3-27b failed: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'google/gemma-3-27b-
-Provider openrouter-gemma-3-12b failed: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'google/gemma-3-12b-
-INFO:     127.0.0.1:58578 - "POST /parse/form16 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64428 - "POST /pipeline/run HTTP/1.1" 200 OK
- ○ Compiling /form ...
- ✓ Compiled /form in 591ms (452 modules)
-INFO:     127.0.0.1:64428 - "GET /pipeline/session/02f80cb8-2e19-4500-a83a-4fd4d8a19a0a HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64428 - "GET /pipeline/session/02f80cb8-2e19-4500-a83a-4fd4d8a19a0a HTTP/1.1" 200 OK
-WARNING:  WatchFiles detected changes in 'parsers\form16.py'. Reloading...
+ ✓ Ready in 7.8s
+ ○ Compiling / ...
+ ⨯ ./src/app/globals.css:1:1
+Syntax error: E:\itr1-project-final\frontend\src\app\globals.css The `bg-background` class does not exist. If `bg-background` is a custom class, make sure it is defined within a `@layer` directive.
+
+[1m[31m>[39m[22m[90m 1 | [39m[36m@tailwind[39m base[33m;[39m
+ [90m   | [39m[1m[31m^[39m[22m
+ [90m 2 | [39m[36m@tailwind[39m components[33m;[39m
+ [90m 3 | [39m[36m@tailwind[39m utilities[33m;[39m
+<w> [webpack.cache.PackFileCacheStrategy] Skipped not serializable cache item 'Compilation/modules|E:\itr1-project-final\frontend\node_modules\next\dist\build\webpack\loaders\css-loader\src\index.js??ruleSet[1].rules[13].oneOf[12].use[2]!E:\itr1-project-final\frontend\node_modules\next\dist\build\webpack\loaders\postcss-loader\src\index.js??ruleSet[1].rules[13].oneOf[12].use[3]!E:\itr1-project-final\frontend\src\app\globals.css': No serializer registered for PostCSSSyntaxError
+<w> while serializing webpack/lib/cache/PackFileCacheStrategy.PackContentItems -> webpack/lib/NormalModule -> webpack/lib/ModuleBuildError -> PostCSSSyntaxError
+ ⨯ ./src/app/globals.css:1:1
+Syntax error: E:\itr1-project-final\frontend\src\app\globals.css The `bg-background` class does not exist. If `bg-background` is a custom class, make sure it is defined within a `@layer` directive.
+
+[1m[31m>[39m[22m[90m 1 | [39m[36m@tailwind[39m base[33m;[39m
+ [90m   | [39m[1m[31m^[39m[22m
+ [90m 2 | [39m[36m@tailwind[39m components[33m;[39m
+ [90m 3 | [39m[36m@tailwind[39m utilities[33m;[39m

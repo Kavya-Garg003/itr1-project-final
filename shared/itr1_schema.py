@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field
 # ── Enums ────────────────────────────────────────────────────────────────────
 
 class TaxRegime(str, Enum):
-    OLD = "old"
     NEW = "new"
 
 class FilingStatus(str, Enum):
@@ -181,25 +180,12 @@ class Deductions(BaseModel):
     total_80c_family:  float = 0.0   # capped at ₹1,50,000
     total_deductions:  float = 0.0
 
-    def compute(self, regime: TaxRegime = TaxRegime.OLD):
-        if regime == TaxRegime.NEW:
-            # New regime: only 80CCD(2) allowed
-            self.total_deductions = min(self.sec_80ccd_2, 0)   # handled separately
-            return
-
-        self.total_80c_family = min(
-            self.sec_80c + self.sec_80ccc + self.sec_80ccd_1,
-            150000.0
-        )
-        self.sec_80tta = min(self.sec_80tta, 10000.0)
-        self.sec_80ttb = min(self.sec_80ttb, 50000.0)
-
-        self.total_deductions = (
-            self.total_80c_family + self.sec_80ccd_1b + self.sec_80ccd_2 +
-            self.sec_80d + self.sec_80dd + self.sec_80ddb +
-            self.sec_80e + self.sec_80ee + self.sec_80gg + self.sec_80ggc +
-            self.sec_80tta + self.sec_80ttb + self.sec_80u
-        )
+    def compute(self, regime: TaxRegime = TaxRegime.NEW):
+        # New regime: only 80CCD(2) allowed
+        self.total_deductions = self.sec_80ccd_2
+        self.total_80c_family = 0.0
+        self.sec_80tta = 0.0
+        self.sec_80ttb = 0.0
 
 
 # ── Section: TDS Details (Schedule TDS1) ─────────────────────────────────────
@@ -271,9 +257,6 @@ class ITR1Form(BaseModel):
     # Confidence & explainability (keyed by field path e.g. "salary_income.gross_salary")
     confidence_scores:    dict[str, FieldConfidence] = Field(default_factory=dict)
     validation_flags:     list[ValidationFlag]        = Field(default_factory=list)
-    regime_recommendation: Optional[str]              = None
-    regime_tax_old:       float                       = 0.0
-    regime_tax_new:       float                       = 0.0
     audit_trail:          list[dict]                  = Field(default_factory=list)
 
     # Metadata

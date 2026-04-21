@@ -23,7 +23,7 @@ from shared.llm_client import get_llm as _get_llm_factory
 
 sys.path.insert(0, str(Path(__file__).parent.parent))  # /app in Docker, project root locally
 from shared.itr1_schema import ITR1Form, ValidationFlag, FieldConfidence, TaxRegime
-from shared.tax_utils import compare_regimes, enforce_deduction_limits, compute_tax
+from shared.tax_utils import enforce_deduction_limits, compute_tax_2025
 
 # ── Shared state schema ───────────────────────────────────────────────────────
 
@@ -201,72 +201,52 @@ def node_fill_form(state: AgentState) -> dict:
         "itr1_form":       json.loads(form.model_dump_json()),
         "confidence_scores": confidence_scores,
         "audit_trail":     audit,
-        "step":            "compare_regimes",
+        "step":            "compute_tax",
     }
 
 
-# ── Node 2: Compare regimes ───────────────────────────────────────────────────
+# ── Node 2: Compute Tax (2025 New Regime) ────────────────────────────────────
 
-def node_compare_regimes(state: AgentState) -> dict:
+def node_compute_tax(state: AgentState) -> dict:
     form_data = state["itr1_form"]
     ay        = state.get("ay", "AY2024-25")
 
     gti       = form_data["tax_computation"]["gross_total_income"]
     total_tds = sum(t["tds_deducted"] for t in form_data.get("tds_details", []))
 
-    # Collect total old-regime deductions
-    ded = form_data.get("deductions", {})
-    total_deductions_old = (
-        min(ded.get("sec_80c", 0) + ded.get("sec_80ccc", 0) + ded.get("sec_80ccd_1", 0), 150000) +
-        ded.get("sec_80ccd_1b", 0) +
-        ded.get("sec_80ccd_2", 0) +
-        ded.get("sec_80d", 0) +
-        min(ded.get("sec_80tta", 0), 10000) +
-        50000  # standard deduction (old regime)
-    )
-
-    regime_analysis = compare_regimes(
-        gross_total_income=gti,
-        deductions_old=total_deductions_old,
-        tds_deducted=total_tds,
+    # Calculate tax strictly under the New Regime
+    tax_breakdown = compute_tax_2025(
+        taxable_income=gti,
         ay=ay,
     )
 
-    # Update form with recommended regime
-    rec = regime_analysis["recommended_regime"]
-    form_data["tax_computation"]["regime"] = rec
-    form_data["regime_recommendation"] = rec
-    form_data["regime_tax_old"] = regime_analysis["old_regime"]["total_tax"]
-    form_data["regime_tax_new"] = regime_analysis["new_regime"]["total_tax"]
+    form_data["tax_computation"]["regime"] = "new"
 
-    # Fill tax computation with recommended regime values
-    regime_data = regime_analysis[f"{rec}_regime"]
+    # Fill tax computation
     tc = form_data["tax_computation"]
-    tc["taxable_income"]          = regime_data["taxable_income"]
-    tc["tax_before_rebate"]       = regime_data["tax_before_rebate"]
-    tc["rebate_87a"]              = regime_data["rebate_87a"]
-    tc["tax_after_rebate"]        = regime_data["tax_after_rebate"]
-    tc["surcharge"]               = regime_data["surcharge"]
-    tc["health_education_cess"]   = regime_data["health_education_cess"]
-    tc["total_tax_liability"]     = regime_data["total_tax"]
+    tc["taxable_income"]          = gti
+    tc["tax_before_rebate"]       = tax_breakdown["tax_before_rebate"]
+    tc["rebate_87a"]              = tax_breakdown["rebate_87a"]
+    tc["tax_after_rebate"]        = tax_breakdown["tax_after_rebate"]
+    tc["surcharge"]               = tax_breakdown["surcharge"]
+    tc["health_education_cess"]   = tax_breakdown["health_education_cess"]
+    tc["total_tax_liability"]     = tax_breakdown["total_tax"]
     tc["tds_deducted"]            = total_tds
-    net = regime_data["total_tax"] - total_tds
+    
+    net = tax_breakdown["total_tax"] - total_tds
     tc["tax_payable"] = max(0, net)
     tc["refund"]      = max(0, -net)
 
     audit = list(state.get("audit_trail", []))
     audit.append({
         "timestamp":  datetime.utcnow().isoformat(),
-        "node":       "compare_regimes",
-        "action":     f"Regime comparison done. Recommended: {rec}. Saving: ₹{regime_analysis['saving']:,.0f}",
-        "old_tax":    regime_analysis["old_regime"]["total_tax"],
-        "new_tax":    regime_analysis["new_regime"]["total_tax"],
-        "recommended": rec,
+        "node":       "compute_tax",
+        "action":     f"Tax computed strictly under 2025 New Regime. Total Tax: ₹{tax_breakdown['total_tax']:,.0f}",
+        "new_tax":    tax_breakdown["total_tax"],
     })
 
     return {
         "itr1_form":      form_data,
-        "regime_analysis": regime_analysis,
         "audit_trail":    audit,
         "step":           "validate",
     }
@@ -483,14 +463,14 @@ def build_itr_graph() -> StateGraph:
     graph = StateGraph(AgentState)
 
     graph.add_node("fill_form",        node_fill_form)
-    graph.add_node("compare_regimes",  node_compare_regimes)
+    graph.add_node("compute_tax",      node_compute_tax)
     graph.add_node("validate",         node_validate)
     graph.add_node("score_confidence", node_score_confidence)
     graph.add_node("explain",          node_explain)
 
     graph.set_entry_point("fill_form")
-    graph.add_edge("fill_form",        "compare_regimes")
-    graph.add_edge("compare_regimes",  "validate")
+    graph.add_edge("fill_form",        "compute_tax")
+    graph.add_edge("compute_tax",      "validate")
     graph.add_conditional_edges("validate", route_after_validate, {"score_confidence": "score_confidence"})
     graph.add_edge("score_confidence", "explain")
     graph.add_edge("explain",          END)

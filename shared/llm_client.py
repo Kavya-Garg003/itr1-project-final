@@ -6,10 +6,10 @@ use the OpenAI-compatible API format, so the same `openai` package
 works for all three — no extra dependencies.
 
 Provider priority (best free first):
-  1. Groq       — llama-3.3-70b-versatile (free tier: 14,400 req/day, 500K tokens/day)
-  2. OpenRouter  — meta-llama/llama-3.3-70b-instruct:free (free, no rate limit listed)
-  3. Groq fast  — llama-3.1-8b-instant (faster fallback when 70B rate-limited)
-  4. OpenAI     — gpt-4o-mini (paid, absolute last resort)
+  1. OpenRouter - google/gemini-2.0-flash-exp:free (Top accuracy)
+  2. OpenRouter - deepseek/deepseek-r1:free (Reasoning)
+  3. OpenRouter - meta-llama/llama-3.3-70b-instruct:free
+  4. Groq       - llama-3.3-70b-versatile
 
 To use:
     from shared.llm_client import complete, complete_with_system
@@ -23,7 +23,6 @@ To use:
 Environment variables needed in .env:
     GROQ_API_KEY=gsk_...        ← get free at console.groq.com
     OPENROUTER_API_KEY=sk-or-.. ← get free at openrouter.ai
-    OPENAI_API_KEY=sk-...       ← optional, paid fallback only
 """
 
 from __future__ import annotations
@@ -39,52 +38,48 @@ log = logging.getLogger(__name__)
 
 PROVIDERS = [
     {
+        "name":     "openrouter-gemini-2-flash",
+        "label":    "OpenRouter Gemini 2.0 Flash (free)",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
+        "model":    "google/gemini-2.0-flash-exp:free",
+        "max_tokens": 4000,
+        "extra_headers": {
+            "HTTP-Referer": "https://itr1-rag-agent.local",
+            "X-Title":      "ITR-1 RAG Agent",
+        },
+    },
+    {
+        "name":     "openrouter-deepseek-r1",
+        "label":    "OpenRouter DeepSeek R1 (free)",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
+        "model":    "deepseek/deepseek-r1:free",
+        "max_tokens": 4000,
+        "extra_headers": {
+            "HTTP-Referer": "https://itr1-rag-agent.local",
+            "X-Title":      "ITR-1 RAG Agent",
+        },
+    },
+    {
+        "name":     "openrouter-llama-70b",
+        "label":    "OpenRouter llama-3.3-70b (free)",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
+        "model":    "meta-llama/llama-3.3-70b-instruct:free",
+        "max_tokens": 4000,
+        "extra_headers": {
+            "HTTP-Referer": "https://itr1-rag-agent.local",
+            "X-Title":      "ITR-1 RAG Agent",
+        },
+    },
+    {
         "name":     "groq-70b",
         "label":    "Groq llama-3.3-70b",
         "base_url": "https://api.groq.com/openai/v1",
         "api_key":  lambda: os.getenv("GROQ_API_KEY", ""),
         "model":    "llama-3.3-70b-versatile",
-        "max_tokens": 1024,
-    },
-    {
-        "name":     "openrouter-llama",
-        "label":    "OpenRouter llama-3.3-70b (free)",
-        "base_url": "https://openrouter.ai/api/v1",
-        "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
-        "model":    "meta-llama/llama-3.3-70b-instruct:free",
-        "max_tokens": 1024,
-        "extra_headers": {
-            "HTTP-Referer": "https://itr1-rag-agent.local",
-            "X-Title":      "ITR-1 RAG Agent",
-        },
-    },
-    {
-        "name":     "openrouter-deepseek",
-        "label":    "OpenRouter DeepSeek (free)",
-        "base_url": "https://openrouter.ai/api/v1",
-        "api_key":  lambda: os.getenv("OPENROUTER_API_KEY", ""),
-        "model":    "deepseek/deepseek-chat:free",
-        "max_tokens": 1024,
-        "extra_headers": {
-            "HTTP-Referer": "https://itr1-rag-agent.local",
-            "X-Title":      "ITR-1 RAG Agent",
-        },
-    },
-    {
-        "name":     "groq-8b",
-        "label":    "Groq llama-3.1-8b (fast fallback)",
-        "base_url": "https://api.groq.com/openai/v1",
-        "api_key":  lambda: os.getenv("GROQ_API_KEY", ""),
-        "model":    "llama-3.1-8b-instant",
-        "max_tokens": 1024,
-    },
-    {
-        "name":     "openai",
-        "label":    "OpenAI gpt-4o-mini (paid last resort)",
-        "base_url": None,                               # use default OpenAI endpoint
-        "api_key":  lambda: os.getenv("OPENAI_API_KEY", ""),
-        "model":    "gpt-4o-mini",
-        "max_tokens": 1024,
+        "max_tokens": 4000,
     },
 ]
 

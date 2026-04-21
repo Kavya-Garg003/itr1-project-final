@@ -111,10 +111,16 @@ def _rerank(query, chunks):
 
 def _answer(query, chunks, ay):
     ctx = "\n\n---\n\n".join(f"[{c.get('source','')} | {c.get('section','')}]\n{c['text']}" for c in chunks)
-    system = (f"You are an expert ITR-1 tax assistant for {ay}. "
-              "Answer using ONLY the provided context. Cite section numbers and rupee limits. "
-              "Be concise — 3-5 sentences unless a breakdown is needed.")
-    prompt = f"Context:\n{ctx}\n\nQuestion: {query}\n\nAnswer:"
+    system = (
+        f"You are an expert ITR-1 tax assistant for {ay}. "
+        "Answer using ONLY the provided context. Do NOT hallucinate or guess. "
+        "You MUST structure your response strictly in the following format:\n"
+        "**Answer**: <your direct final answer>\n"
+        "**Reasoning**: <why you concluded this based on the tax law context>\n"
+        "**Source Quote**: <the exact snippet from the text you used>\n"
+        "**Citation**: <source file/URL and section>"
+    )
+    prompt = f"Context:\n{ctx}\n\nQuestion: {query}\n\nResponse:"
     try:
         from shared.llm_client import complete_with_system
         return complete_with_system(system=system, user=prompt, temperature=0.0)
